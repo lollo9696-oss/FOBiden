@@ -191,7 +191,7 @@ const DESIGNER_LINES = [
 const HAGGLE_LINES = ['$3 ЗА ФУТБОЛКУ!', 'ДОРОГОЙ, Я НЕ МОГУ ТАКОЕ СДЕЛАТЬ!', 'ЭТО ТЯЖЕЛО ДЛЯ НАС!', 'ЛУЧШАЯ ЦЕНА, ДРУГ!', '$5 — ПОСЛЕДНЯЯ ЦЕНА!', 'MOQ 10 000 ШТ!', 'ТКАНЬ ПОДОРОЖАЛА!', '+15% ЗА СРОЧНОСТЬ!'];
 const CAVES = {
   archive: { text:'ТЕБЕ НУЖНО ВЗЯТЬ ЭТУ ВЕЩЬ.', npc:'veronika', item:'staff', leaves:true,
-             got:'ВЫ ПОДОБРАЛИ ПОСОХ! ПРОБЕЛ — УДАР.', gone:'' },
+             got:'ПОСОХ ГЛОРИИ ДЖИНС ПОЛУЧЕН!', gone:'' },
   secret:  { text:'ЭТО СЕКРЕТ ДЛЯ ВСЕХ: ПРАЙС КОНКУРЕНТА!', npc:'merch', item:'args10', got:'+10 АРГУМЕНТОВ ДЛЯ ТОРГА!' },
   thermos: { text:'НА ТАМОЖНЕ ДОЛГИЕ ОЧЕРЕДИ. ВОЗЬМИ ТЕРМОС.', npc:'elder', item:'thermos', got:'ТЕРМОС: +1 ЧАШКА КОФЕ К ЗАПАСУ!' }
 };
@@ -250,17 +250,17 @@ const LOCS = [
       '#..............#',
       '#..............#',
       '################']},
-    '2,1': { doors:{ w:'open' }, cond:'boxes', hint:'Задвинь коробки с образцами на метки. Застряли? Выйди и зайди снова.', map:[
+    '2,1': { doors:{ w:'open' }, cond:'boxes', hint:'Склад образцов: разложи коробки по меткам своего цвета. Застрял — жми красную кнопку.', map:[
       '################',
-      '#c.........cKc.#',
-      '#..........cGc.#',
-      '#...B....o.....#',
-      '#..............#',
-      '#......cc......#',
-      '#..............#',
-      '#...B....o.....#',
-      '#..............#',
-      '#c............c#',
+      '#cccccccccccccK#',
+      '#c...cc......cG#',
+      '#c.1.c..2....c.#',
+      '#c...c.cc....c.#',
+      '#.......c....c.#',
+      '#c.cc.3......c.#',
+      '#c....cc.c...c.#',
+      '#c.7..8...9c...#',
+      '#c!......c.....#',
       '################']},
     '1,0': { doors:{ s:'open', e:'lock' }, hint:'Лабиринт опенспейса.', map:[
       '################',
@@ -380,17 +380,17 @@ const LOCS = [
       '#.^<<<<<<<<<<<.#',
       '#..............#',
       '################']},
-    '1,1': { doors:{ n:'open' }, cond:'boxes', hint:'Задвинь рулоны ткани на метки. Застряли? Выйди и зайди снова.', map:[
+    '1,1': { doors:{ n:'open' }, cond:'boxes', hint:'Склад рулонов: развези рулоны ткани к меткам своего цвета. Застрял — жми красную кнопку.', map:[
       '################',
-      '#..............#',
-      '#..mm......mm..#',
-      '#..............#',
-      '#...B.....o....#',
-      '#..............#',
-      '#...B.....o....#',
-      '#..............#',
-      '#.........mGm..#',
-      '#.........mKm..#',
+      '#mmmmmm..mmmmmK#',
+      '#m...........mG#',
+      '#m.1..m..m.2.m.#',
+      '#m....m..m...m.#',
+      '#mm.mm....mm.m.#',
+      '#m.....3.....m.#',
+      '#m.m..mm.m...m.#',
+      '#m.8.....9.7.m.#',
+      '#m!...m........#',
       '################']},
     '2,0': { doors:{ w:'open', e:'lock' }, cond:'quiz',
       quiz:{ q:'Что такое AQL при инспекции партии?', opts:['Минимальная партия заказа у фабрики','Допустимый уровень брака при выборочной проверке партии','Срок отшива партии в днях'], a:1 },
@@ -712,6 +712,12 @@ function drawTile(t, x, y, tx, ty, th){
     case 'o': // метка
       for(let i = 0; i < 14; i += 4){ rect(x+1+i, y+1, 2, 1, th.accent); rect(x+1+i, y+14, 2, 1, th.accent); rect(x+1, y+1+i, 1, 2, th.accent); rect(x+14, y+1+i, 1, 2, th.accent); }
       rect(x+6, y+6, 4, 4, th.accent); break;
+    case '7': case '8': case '9': {
+      const c = BOX_COLORS[+t - 6];
+      for(let i = 0; i < 14; i += 4){ rect(x+1+i, y+1, 2, 2, c); rect(x+1+i, y+13, 2, 2, c); rect(x+1, y+1+i, 2, 2, c); rect(x+13, y+1+i, 2, 2, c); }
+      rect(x+5, y+5, 6, 6, c); rect(x+6, y+6, 4, 4, '#ffffff'); rect(x+7, y+7, 2, 2, c); break; }
+    case '!':
+      rect(x+3, y+9, 10, 5, '#5a6b7c'); rect(x+4, y+5 + ((frame >> 4) % 2), 8, 6, INK); rect(x+5, y+6 + ((frame >> 4) % 2), 6, 4, '#d8423b'); rect(x+6, y+6, 2, 1, '#ff8a80'); break;
     case 'Q': // терминал
       orect(x+1, y+1, 14, 10, '#2c3e50'); rect(x+2, y+2, 12, 8, (frame >> 4) % 2 ? '#7ff0a8' : '#5fd690');
       rect(x+3, y+3, 5, 1, '#1d5a35'); rect(x+3, y+5, 8, 1, '#1d5a35'); rect(x+3, y+7, 3, 1, '#1d5a35');
@@ -742,9 +748,11 @@ function chevron(x, y, dx, dy){
   if(dy > 0){ rect(x, y, 2, 2, c); rect(x+2, y+2, 2, 2, c); rect(x+4, y, 2, 2, c); }
   if(dy < 0){ rect(x, y+2, 2, 2, c); rect(x+2, y, 2, 2, c); rect(x+4, y+2, 2, 2, c); }
 }
-function drawBox(x, y){
+const BOX_COLORS = { 1:'#e05a4f', 2:'#3b82c4', 3:'#2fa36b' };
+function drawBox(x, y, color){
   orect(x+1, y+1, 14, 14, '#d9a865', '#7a5531'); rect(x+7, y+2, 2, 12, '#f0d29b'); rect(x+2, y+7, 12, 2, '#f0d29b');
   rect(x+2, y+2, 3, 1, '#ecc589');
+  if(color){ orect(x+3, y+3, 5, 4, BOX_COLORS[color]); rect(x+4, y+4, 1, 1, '#ffffff'); }
 }
 function drawLight(x, y, on){
   orect(x+1, y+1, 14, 14, on ? '#ffe066' : '#cfd6dd', '#46525e');
@@ -771,7 +779,9 @@ function drawItem(kind, x, y){
   } else if(kind === 'C'){ // большая чашка — +1 к запасу
     orect(x+2, y+3, 12, 12, '#ffffff'); rect(x+3, y+4, 10, 3, '#7a4a25'); rect(x+14, y+6, 2, 6, INK);
     rect(x+5, y+9, 6, 4, '#d8423b'); rect(x+7, y+8, 2, 6, '#d8423b');
-  } else if(kind === 'staff' || kind === 'folder' || kind === 'Y'){
+  } else if(kind === 'staff'){
+    drawStuckStaff(x, y + bob, state === 'pull' && pull ? pull.p : 0, state === 'pull' && pull && pull.shake);
+  } else if(kind === 'folder' || kind === 'Y'){
     drawStaffIcon(x, y);
   } else if(kind === 'args10'){
     orect(x+2, y+2, 12, 13, '#ffffff'); for(let i = 0; i < 4; i++) rect(x+4, y+5 + i*2, 8, 1, '#5b6b7d'); rect(x+9, y+11, 4, 3, '#d8423b');
@@ -999,8 +1009,9 @@ function loadRoom(loc, key){
     const line = [];
     for(let tx = 0; tx < COLS; tx++){
       let t = row[tx];
-      if(t === 'B'){ room.boxes.push({ tx, ty, ox:tx, oy:ty, anim:0, fx:0, fy:0 }); t = '.'; }
-      else if(t === 'o'){ room.pads.push({ tx, ty }); }
+      if(t === 'B' || t === '1' || t === '2' || t === '3'){ room.boxes.push({ tx, ty, ox:tx, oy:ty, anim:0, fx:0, fy:0, color:t === 'B' ? 0 : +t }); t = '.'; }
+      else if(t === 'o' || t === '7' || t === '8' || t === '9'){ room.pads.push({ tx, ty, color:t === 'o' ? 0 : +t - 6 }); }
+      else if(t === '!'){ room.resetBtn = { tx, ty }; }
       else if(t === 'L'){ room.lights.push({ tx, ty, on:false }); }
       else if(t === 'E'){ room.enemies.push(makeEnemy(cfg.enemy, tx, ty)); t = '.'; }
       else if(t === 'M'){ if(!st.solved) room.boss = makeBoss(cfg.boss, tx*TS - 4, ty*TS - 8); t = '.'; }
@@ -1023,7 +1034,10 @@ function loadRoom(loc, key){
   });
   if(st.solved){
     if(cfg.cond === 'enemies') room.enemies = [];
-    if(cfg.cond === 'boxes') room.boxes.forEach((b, i)=>{ const p = room.pads[i]; if(p){ b.tx = p.tx; b.ty = p.ty; } });
+    if(cfg.cond === 'boxes'){
+      const free = room.pads.slice();
+      room.boxes.forEach(b=>{ const i = free.findIndex(p=>!p.color || p.color === b.color); if(i >= 0){ b.tx = free[i].tx; b.ty = free[i].ty; free.splice(i, 1); } });
+    }
     if(cfg.cond === 'lights') room.lights.forEach(l=>l.on = true);
   }
   return room;
@@ -1115,7 +1129,7 @@ function solve(){
 function condMet(){
   switch(R.cfg.cond){
     case 'enemies': return R.enemies.length === 0;
-    case 'boxes':   return R.pads.every(p=>R.boxes.some(b=>b.tx === p.tx && b.ty === p.ty && b.anim === 0));
+    case 'boxes':   return R.pads.every(p=>R.boxes.some(b=>b.tx === p.tx && b.ty === p.ty && b.anim === 0 && (!p.color || p.color === b.color)));
     case 'lights':  return R.lights.every(l=>l.on);
     case 'boss':    return !R.boss;
     case 'item':    return G.hasFolder;
@@ -1205,6 +1219,9 @@ function updateHero(){
     h.cell = cell;
     const L = R.lights.find(l=>l.tx === ctx_ && l.ty === cty);
     if(L && !R.st.solved) toggleLights(L);
+    if(R.resetBtn && R.resetBtn.tx === ctx_ && R.resetBtn.ty === cty && !R.st.solved){
+      R.boxes.forEach(b=>{ b.tx = b.ox; b.ty = b.oy; b.anim = 0; }); SFX.door(); showToast('КОРОБКИ ВЕРНУЛИСЬ НА МЕСТА');
+    }
     if(tUnder === 'S'){ nextLocation(); return; }
     if(tUnder === 'O' && R.cave){ enterCave(); return; }
   }
@@ -1212,7 +1229,10 @@ function updateHero(){
   // предметы
   for(let i = R.items.length - 1; i >= 0; i--){
     const it = R.items[i];
-    if(Math.abs(it.x + 8 - cx) < 11 && Math.abs(it.y + 8 - (h.y + 10)) < 11) pickItem(it, i);
+    if(Math.abs(it.x + 8 - cx) < 11 && Math.abs(it.y + 8 - (h.y + 10)) < 11){
+      if(it.kind === 'staff'){ startPull(it); return; }
+      pickItem(it, i);
+    }
   }
 
   // атака
@@ -1264,7 +1284,7 @@ function onBump(t, v){
     if(++h.push > 10){
       const nx = b.tx + v[0], ny = b.ty + v[1];
       const nt = (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) ? R.grid[ny][nx] : '#';
-      const free = (nt === '.' || nt === 'o') && !doorAt(nx, ny) && !R.boxes.some(o=>o.tx === nx && o.ty === ny)
+      const free = '.o789!'.includes(nt) && !doorAt(nx, ny) && !R.boxes.some(o=>o.tx === nx && o.ty === ny)
         && !R.enemies.some(e=>overlap(entBox(e), { x:nx*TS, y:ny*TS, w:TS, h:TS }));
       if(free){ b.fx = b.tx; b.fy = b.ty; b.tx = nx; b.ty = ny; b.anim = 8; SFX.push(); }
       h.push = 0;
@@ -1283,6 +1303,84 @@ function toggleLights(L){
   SFX.light();
 }
 
+/* ---------------- «меч в камне»: быстро жми, чтобы вытащить посох ---------------- */
+let pull = null, reveal = null;
+function startPull(it){
+  hero.x = it.x; hero.y = it.y + 13; hero.facing = 'up'; hero.atk = 0; hero.walk = 0;
+  pull = { it, p:0, t:0, shake:0 }; caveText = null; state = 'pull';
+}
+function updatePull(){
+  pull.t++;
+  if(hit('act')){ pull.p = Math.min(1, pull.p + 0.09); pull.shake = 6; beep(300 + pull.p*700, .04, 'square', .04); if(Math.random() < .6) particles.push({ x:pull.it.x + 8 + (Math.random()*10 - 5), y:pull.it.y + 12, vx:(Math.random() - .5)*1.6, vy:-Math.random()*1.4, t:16, c:'#ffd43b' }); }
+  if(pull.p < 1) pull.p = Math.max(0, pull.p - 0.003 - pull.p*0.0025);
+  if(pull.shake > 0) pull.shake--;
+  if(curDir() === 'down' && pull.t > 20){ state = 'play'; hero.y += 6; pull = null; return; }
+  if(pull.p >= 1){
+    const i = R.items.indexOf(pull.it); if(i >= 0) R.items.splice(i, 1);
+    reveal = { t:0, item:pull.it }; pull = null; state = 'reveal'; hero.facing = 'down';
+    [523,659,784,1046,1318,1568].forEach((f, k)=>beep(f, .18, 'square', .05, 0, k*.12)); beep(2093, .6, 'triangle', .05, 0, .8);
+  }
+}
+function updateReveal(){
+  reveal.t++;
+  if(reveal.t % 3 === 0){ const a = Math.random()*Math.PI*2, r = 6 + Math.random()*20; particles.push({ x:hero.x + 8 + Math.cos(a)*r, y:hero.y - 12 + Math.sin(a)*r, vx:Math.cos(a)*.5, vy:Math.sin(a)*.5 - .3, t:24, c:Math.random() < .5 ? '#ffd43b' : '#ffffff' }); }
+  if(reveal.t > 90 && hit('act')){
+    const it = reveal.item; reveal = null; state = 'play';
+    pickItemSilent(it);
+    showToast('ПРОБЕЛ — УДАР ПОСОХОМ');
+  }
+}
+function pickItemSilent(it){
+  G.caves[it.cave] = true; G.hasFolder = true;
+  const c = CAVES[it.cave];
+  if(c.leaves){ const n = R.npcs.findIndex(n=>n.kind === c.npc); if(n >= 0){ const nn = R.npcs[n]; poof(nn.tx*TS + 8, nn.ty*TS + 8, '#9aa7b4'); R.grid[nn.ty][nn.tx] = '.'; R.npcs.splice(n, 1); } }
+}
+function drawStone(x, y){
+  rect(x-2, y+9, 20, 7, INK); rect(x-1, y+10, 18, 5, '#8a8f98'); rect(x+1, y+7, 14, 4, INK); rect(x+2, y+8, 12, 3, '#a7adb5');
+  rect(x+1, y+10, 4, 1, '#c3c8ce'); rect(x+10, y+12, 5, 1, '#6c727a');
+}
+function drawStuckStaff(x, y, lift, shake){
+  const sx = x + (shake ? ((frame & 1) ? 1 : -1) : 0), up = Math.round(lift*9);
+  drawStone(x, y);
+  // посох: торчит из камня, поднимается при рывках
+  rect(sx+7, y-1 - up, 2, 10 + Math.min(up, 2), '#7a4a25'); rect(sx+7, y-1 - up, 1, 10, '#a06a3a');
+  drawGJ(sx+8, y-5 - up);
+  if((frame >> 3) % 2) { rect(sx+3, y-9 - up, 1, 1, '#fff3bf'); rect(sx+13, y-3 - up, 1, 1, '#fff3bf'); }
+}
+function drawPullUI(){
+  const w = 150, x = (W - w)/2, y = HUD + PH - 34;
+  orect(x - 6, y - 12, w + 12, 30, '#ffffff');
+  if((frame >> 3) % 2) text(matchMedia('(pointer: coarse)').matches ? 'ЖМИ «A» БЫСТРО!' : 'ЖМИ ПРОБЕЛ БЫСТРО!', W/2, y - 8, '#d8423b', 'center');
+  orect(x, y + 4, w, 8, '#e7eef6'); rect(x + 1, y + 5, Math.round((w - 2) * pull.p), 6, pull.p > .7 ? '#2fa36b' : '#f2b134');
+}
+function drawReveal(){
+  const cx = hero.x + 8, cy = HUD + hero.y - 10, k = Math.min(1, reveal.t / 40);
+  ctx.save(); ctx.globalAlpha = .55 * k; ctx.translate(cx, cy);
+  for(let i = 0; i < 12; i++){
+    ctx.rotate(Math.PI/6 + (i === 0 ? reveal.t * 0.01 : 0));
+    ctx.fillStyle = i % 2 ? '#ffe066' : '#fff8d6';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-7, -150); ctx.lineTo(7, -150); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  ctx.save(); ctx.translate(0, HUD);
+  // герой поднимает посох над головой
+  drawPerson(hero.x, hero.y, Object.assign({ facing:'down' }, heroLook()));
+  rect(hero.x + 3, hero.y - 2, 2, 8, INK); rect(hero.x + 11, hero.y - 2, 2, 8, INK);
+  rect(hero.x + 7, hero.y - 16, 2, 15, '#7a4a25'); rect(hero.x + 7, hero.y - 16, 1, 15, '#a06a3a');
+  drawGJ(hero.x + 8, hero.y - 20);
+  for(const p of particles) rect(p.x - 1, p.y - 1, 2, 2, p.c);
+  ctx.restore();
+  // табличка
+  const bw = 220, bx = (W - bw)/2, by = HUD + 8;
+  if(reveal.t > 20){
+    orect(bx, by, bw, 36, '#fffbe8'); rect(bx + 2, by + 2, bw - 4, 1, '#f2b134');
+    ctx.save(); ctx.scale(1, 1);
+    text('ПОСОХ ГЛОРИИ ДЖИНС', W/2, by + 7, '#1d4e89', 'center');
+    text('ПОЛУЧЕН!', W/2, by + 20, '#d8423b', 'center');
+    ctx.restore();
+  }
+  if(reveal.t > 90 && (frame >> 4) % 2) text('▼', W/2, HUD + PH - 14, '#ffd43b', 'center');
+}
 function pickItem(it, i){
   R.items.splice(i, 1);
   if(it.id) G.taken[it.id] = true;
@@ -1502,6 +1600,11 @@ function update(){
     for(const b of R.boxes) if(b.anim > 0) b.anim--;
     if(!R.st.solved && R.cfg.cond && condMet()) solve();
     if(caveText && caveText.shown < caveText.s.length && frame % 3 === 0){ caveText.shown++; SFX.text(); }
+  } else if(state === 'pull'){
+    updatePull();
+    if(caveText && caveText.shown < caveText.s.length) caveText.shown++;
+  } else if(state === 'reveal'){
+    updateReveal();
   } else if(state === 'dialog'){
     const line = dialog.lines[dialog.i];
     if(dialog.shown < line.length){ dialog.shown += 1; if(frame % 3 === 0) SFX.text(); if(hit('act')) dialog.shown = line.length; }
@@ -1539,7 +1642,7 @@ function drawRoom(room, ox, oy, withEntities){
   for(const b of room.boxes){
     let bx = b.tx*TS, by = b.ty*TS;
     if(b.anim > 0){ const k = b.anim / 8; bx = (b.tx + (b.fx - b.tx)*k)*TS; by = (b.ty + (b.fy - b.ty)*k)*TS; }
-    drawBox(bx, by);
+    drawBox(bx, by, b.color);
   }
   for(const it of room.items) drawItem(it.kind, it.x, it.y);
   for(const n of room.npcs){
@@ -1678,6 +1781,8 @@ function render(){
     lines.forEach((l, i)=>text(l, W/2, y + 6 + i*11, INK, 'center'));
   }
   if(state === 'dialog') drawDialog();
+  if(state === 'pull') drawPullUI();
+  if(state === 'reveal'){ ctx.fillStyle = 'rgba(10,8,20,.35)'; ctx.fillRect(0, HUD, W, PH); drawReveal(); }
   if(state === 'fade' || state === 'fadein'){
     const k = state === 'fade' ? fade.t / fade.dur : 1 - (fade.t - fade.dur) / fade.dur;
     ctx.fillStyle = 'rgba(251,253,255,' + Math.max(0, Math.min(1, k)) + ')'; ctx.fillRect(0, 0, W, H);
