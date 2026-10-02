@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Квест байера</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#e6eef6;
+    --ink:#1d2b3a;
+    --panel:#ffffff;
+    --accent:#3b82c4;
+    --gold:#f2b134;
+    --muted:#5b6b7d;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --page:#18212c; --ink:#1d2b3a; --panel:#ffffff; --muted:#9fb0c2; }
+  }
+  :root[data-theme="dark"]{ --page:#18212c; --muted:#9fb0c2; }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:var(--page); color:var(--ink);
+    font-family:'Press Start 2P', monospace;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:100vh; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none;
+  }
+  #wrap{ position:relative; }
+  canvas{
+    display:block; image-rendering:pixelated; image-rendering:crisp-edges;
+    border:4px solid var(--ink); border-radius:6px; background:#f6ecd9;
+    box-shadow:0 10px 30px rgba(29,43,58,.25);
+  }
+  .overlay{
+    position:absolute; inset:4px; display:none; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:14px; padding:16px; border-radius:3px;
+    background:rgba(246,250,255,.94); color:var(--ink);
+  }
+  .overlay.show{ display:flex; }
+  .overlay h1{ font-size:clamp(14px,3.2vw,22px); line-height:1.5; margin:0; color:var(--ink); }
+  .overlay h1 span{ color:var(--accent); }
+  .overlay p{ font-size:clamp(8px,1.6vw,11px); line-height:1.9; margin:0; max-width:560px; color:#33475b; }
+  .overlay .big{ font-size:clamp(18px,4vw,30px); color:#c98a0a; }
+  .btn{
+    font-family:inherit; font-size:clamp(9px,1.7vw,12px); cursor:pointer;
+    background:var(--gold); color:var(--ink); border:3px solid var(--ink); border-radius:4px;
+    padding:10px 16px; box-shadow:0 4px 0 var(--ink);
+  }
+  .btn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--ink); }
+  .btn.alt{ background:#ffffff; }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .keys{ font-size:clamp(7px,1.3vw,9px); color:#5b6b7d; line-height:2; }
+  #quiz .q{ font-size:clamp(9px,1.8vw,12px); line-height:1.8; max-width:600px; }
+  #quiz .opts{ display:flex; flex-direction:column; gap:10px; width:min(600px,100%); }
+  #quiz .opt{
+    font-family:inherit; text-align:left; font-size:clamp(8px,1.5vw,10px); line-height:1.7; cursor:pointer;
+    background:#fff; border:3px solid var(--ink); border-radius:4px; padding:10px 12px; color:var(--ink);
+  }
+  #quiz .opt:hover{ background:#fff4d6; }
+  #quiz .opt b{ color:var(--accent); margin-right:6px; }
+  #quiz .term{ font-size:9px; color:#2f7d4a; }
+  #touch{ display:none; width:100%; max-width:520px; justify-content:space-between; align-items:center; padding:14px 18px 0; }
+  #touch.show{ display:flex; }
+  .dpad{ position:relative; width:138px; height:138px; }
+  .dpad button{
+    position:absolute; width:46px; height:46px; border:3px solid var(--ink); border-radius:6px;
+    background:#fff; font-family:inherit; font-size:12px; color:var(--ink); touch-action:none;
+  }
+  .dpad .u{ left:46px; top:0; } .dpad .d{ left:46px; bottom:0; } .dpad .l{ left:0; top:46px; } .dpad .r{ right:0; top:46px; }
+  .abtn{
+    width:74px; height:74px; border-radius:50%; border:3px solid var(--ink); background:var(--gold);
+    font-family:inherit; font-size:14px; color:var(--ink); box-shadow:0 4px 0 var(--ink); touch-action:none;
+  }
+  #mute{
+    position:absolute; right:10px; bottom:-34px; font-family:inherit; font-size:8px; padding:6px 8px;
+    background:#fff; border:2px solid var(--ink); border-radius:4px; cursor:pointer; color:var(--ink);
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="256" height="224" aria-label="Игровое поле"></canvas>
+
+  <div class="overlay show" id="title">
+    <h1>КВЕСТ БАЙЕРА<br><span>В ПОИСКАХ ПОСТАВЩИКА</span></h1>
+    <p>Лучшего поставщика запер в эксклюзивном контракте злой МОНОПОЛИСТ. Пройди офис, выставку, фабрику и порт, реши головоломки, победи боссов и подпиши честный контракт!</p>
+    <div class="row">
+      <button class="btn" id="btnNew">НОВАЯ ИГРА</button>
+      <button class="btn alt" id="btnCont" style="display:none">ПРОДОЛЖИТЬ</button>
+    </div>
+    <div class="keys">СТРЕЛКИ / WASD — ИДТИ · ПРОБЕЛ — ПАПКА / ГОВОРИТЬ<br>НА ТЕЛЕФОНЕ — КНОПКИ ПОД ЭКРАНОМ</div>
+  </div>
+
+  <div class="overlay" id="dead">
+    <h1>ПЕРЕГОВОРЫ<br><span>СОРВАЛИСЬ</span></h1>
+    <p>Кофе закончился. Выпей ещё чашку и попробуй снова с начала локации.</p>
+    <button class="btn" id="btnRetry">ПОПРОБОВАТЬ СНОВА</button>
+  </div>
+
+  <div class="overlay" id="quiz">
+    <div class="term">&gt; ТЕРМИНАЛ ЗАКУПОК</div>
+    <div class="q" id="quizQ"></div>
+    <div class="opts" id="quizOpts"></div>
+  </div>
+
+  <div class="overlay" id="win">
+    <h1>КОНТРАКТ<br><span>ПОДПИСАН!</span></h1>
+    <div class="big" id="winDiscount"></div>
+    <p id="winStats"></p>
+    <button class="btn" id="btnAgain">ИГРАТЬ ЕЩЁ РАЗ</button>
+  </div>
+
+  <button id="mute" type="button">ЗВУК: ВКЛ</button>
+</div>
+
+<div id="touch">
+  <div class="dpad">
+    <button class="u" data-k="up">▲</button>
+    <button class="l" data-k="left">◀</button>
+    <button class="r" data-k="right">▶</button>
+    <button class="d" data-k="down">▼</button>
+  </div>
+  <button class="abtn" data-k="act">A</button>
+</div>
+
+<script>
+/* ===================================================================
+   КВЕСТ БАЙЕРА — top-down приключение в духе Zelda (NES).
+   Поле 256x224: HUD 48px + комната 16x11 тайлов по 16px.
+   =================================================================== */
+const W = 256, H = 224, HUD = 48, TS = 16, COLS = 16, ROWS = 11, PH = ROWS * TS;
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const FONT = '8px "Press Start 2P", monospace';
+const INK = '#1d2b3a';
+
+/* ---------------- палитры локаций (светлые) ---------------- */
+const THEMES = {
+  office:  { floor:'#f6ecd9', dot:'#eadbbd', wall:'#cfdcea', wallHi:'#f0f6fc', wallLo:'#8ea5bd', accent:'#3b82c4' },
+  fair:    { floor:'#fff4de', dot:'#f3dfb8', wall:'#f6d3a8', wallHi:'#fff0dc', wallLo:'#c78f55', accent:'#e0603a' },
+  factory: { floor:'#eceff3', dot:'#d9dfe6', wall:'#c6cfd9', wallHi:'#f1f4f7', wallLo:'#7e8b99', accent:'#f2b705' },
+  port:    { floor:'#e7f5f3', dot:'#cfe8e4', wall:'#acd6d2', wallHi:'#e6f7f5', wallLo:'#5e9e99', accent:'#1f8f8a' },
+  hq:      { floor:'#f3e5ca', dot:'#e5d0aa', wall:'#f7f1e6', wallHi:'#fffaf1', wallLo:'#b89a5e', accent:'#c9a227' },
+  cave:    { floor:'#121019', dot:'#121019', wall:'#7a5434', wallHi:'#9c7048', wallLo:'#4a3220', accent:'#ffb347' }
+};
+
+/* ---------------- легенда тайлов ----------------
+   # стена   . пол   d стол   p растение   c шкаф   s стенд   x контейнер   m станок
+   B коробка (толкать)   o метка для коробки   K ключ-бейдж   H кофе   A аргумент
+   Q терминал-викторина   L плитка-свет   > < ^ v конвейер   N персонаж   X поставщик
+   G турникет (откроется после решения)   E враг   M босс   Z скрытый лифт   O тёмный проход
+   F огонь (в архиве)   Y предмет в архиве                                            */
+const SOLID = new Set(['#','d','p','c','s','x','m','N','Q','X','F']);
+const CONVEY = { '>':[1,0], '<':[-1,0], '^':[0,-1], 'v':[0,1] };
+
+const ENEMY = {
+  spam:     { hp:1, speed:.55, name:'спам' },
+  promoter: { hp:2, speed:.42, name:'промоутер' },
+  defect:   { hp:2, speed:.7,  name:'брак' },
+  drone:    { hp:2, speed:.8,  name:'дрон' }
+};
+const BOSSES = {
+  bureaucrat: { name:'БЮРОКРАТ',          hp:8,  speed:.45, every:95,  shot:'aim3',  proj:'paper' },
+  reseller:   { name:'ПЕРЕКУПЩИК',        hp:10, speed:.5,  every:150, shot:'aim1',  proj:'flyer', dash:true },
+  press:      { name:'ПРЕСС-ШТАМПОВЩИК',  hp:12, speed:.6,  every:85,  shot:'ring8', proj:'bolt',  horiz:true },
+  broker:     { name:'БРОКЕР-ВЫМОГАТЕЛЬ', hp:12, speed:.6,  every:70,  shot:'aim3',  proj:'stamp', teleport:true },
+  monopolist: { name:'МОНОПОЛИСТ',        hp:16, speed:.5,  every:105, shot:'ring8', proj:'coin',  summon:true }
+};
+
+const CAVES = {
+  archive: { text:'ОДНОМУ НА ПЕРЕГОВОРЫ ИДТИ ОПАСНО! ВОЗЬМИ ЭТО.', npc:'elder', item:'folder', got:'ПАПКА С КП! ПРОБЕЛ — УДАР АРГУМЕНТОМ.' },
+  secret:  { text:'ЭТО СЕКРЕТ ДЛЯ ВСЕХ: ПРАЙС КОНКУРЕНТА!', npc:'merch', item:'args10', got:'+10 АРГУМЕНТОВ ДЛЯ ТОРГА!' },
+  thermos: { text:'НА ТАМОЖНЕ ДОЛГИЕ ОЧЕРЕДИ. ВОЗЬМИ ТЕРМОС.', npc:'elder', item:'thermos', got:'ТЕРМОС: +1 ЧАШКА КОФЕ К ЗАПАСУ!' }
+};
+const CAVE_MAP = [
+  '################',
+  '#..............#',
+  '#..............#',
+  '#...F..N...F...#',
+  '#..............#',
+  '#.......Y......#',
+  '#..............#',
+  '#..............#',
+  '#..............#',
+  '#..............#',
+  '#######..#######'
+];
+
+/* ---------------- локации и комнаты ---------------- */
+const LOCS = [
+  { name:'ОФИС ЗАКУПОК', theme:'office', start:'0,1', startTile:[7,7], rooms:{
+    '0,1': { doors:{ e:'shut' }, cond:'item', cave:'archive',
+      npc:{ kind:'boss', name:'РУКОВОДИТЕЛЬ', lines:['Квартал горит! Нам нужен лучший поставщик.','Его держит в эксклюзивном контракте МОНОПОЛИСТ.','Без папки с КП к поставщикам не ходят. Загляни в архив — тёмный проход наверху.'] },
+      map:[
+      '###O############',
+      '#pp...dddd...pp#',
+      '#..............#',
+      '#..d........d..#',
+      '#..d...N....d..#',
+      '#..............#',
+      '#..d........d..#',
+      '#..d........d..#',
+      '#..............#',
+      '#pp..........pp#',
+      '################']},
+    '1,1': { doors:{ w:'shut', e:'shut', n:'shut' }, cond:'enemies', enemy:'spam', map:[
+      '################',
+      '#..............#',
+      '#.dd..dd..dd...#',
+      '#..............#',
+      '#..E.......E...#',
+      '#..............#',
+      '#.dd..dd..dd...#',
+      '#.......E......#',
+      '#..............#',
+      '#..............#',
+      '################']},
+    '2,1': { doors:{ w:'open' }, cond:'boxes', hint:'Задвинь коробки с образцами на метки. Застряли? Выйди и зайди снова.', map:[
+      '################',
+      '#c.........cKc.#',
+      '#..........cGc.#',
+      '#...B....o.....#',
+      '#..............#',
+      '#......cc......#',
+      '#..............#',
+      '#...B....o.....#',
+      '#..............#',
+      '#c............c#',
+      '################']},
+    '1,0': { doors:{ s:'open', e:'lock' }, hint:'Лабиринт опенспейса.', map:[
+      '################',
+      '#H.d.....d....A#',
+      '#..d.ddd.d.dd..#',
+      '#..d...d...d...#',
+      '#.ddd.dd.ddd.d.#',
+      '#.....d......d.#',
+      '#.ddd.d.dddd.d.#',
+      '#...d......d...#',
+      '#.d.d.dddd.d.d.#',
+      '#.d...........d#',
+      '################']},
+    '2,0': { doors:{ w:'lock' }, cond:'boss', boss:'bureaucrat', map:[
+      '################',
+      '#............Z.#',
+      '#.p..........p.#',
+      '#..............#',
+      '#..............#',
+      '#......M.......#',
+      '#..............#',
+      '#..............#',
+      '#.p..........p.#',
+      '#..............#',
+      '################']}
+  }},
+  { name:'ВЫСТАВКА ПОСТАВЩИКОВ', theme:'fair', start:'0,1', startTile:[7,7], rooms:{
+    '0,1': { doors:{ n:'open', e:'open' },
+      npc:{ kind:'host', name:'ОРГАНИЗАТОР', lines:['Добро пожаловать на выставку!','Поставщиков тут сотни, а лучший — один.','Бейдж в VIP-зону лежит в павильоне со светом, на севере.'] },
+      map:[
+      '################',
+      '#s.s.s....s.s.s#',
+      '#..............#',
+      '#..............#',
+      '#...s......s...#',
+      '#......N.......#',
+      '#...s......s...#',
+      '#..............#',
+      '#..............#',
+      '#ss.ss....ss.ss#',
+      '################']},
+    '0,0': { doors:{ s:'open' }, cond:'lights', hint:'Зажги все 9 ламп: шаг на плитку переключает её и соседей.', map:[
+      '################',
+      '#ss...cKc....ss#',
+      '#s....cGc.....s#',
+      '#..............#',
+      '#....L.L.L.....#',
+      '#..............#',
+      '#....L.L.L.....#',
+      '#..............#',
+      '#....L.L.L.....#',
+      '#s............s#',
+      '################']},
+    '1,1': { doors:{ w:'open', e:'open' }, enemy:'promoter', cave:'secret', map:[
+      '#######O########',
+      '#..s....s...s..#',
+      '#.ss.ss.s.s.ss.#',
+      '#....s...s.s...#',
+      '#.ss.s.sss.s.s.#',
+      '#....E.....s.E.#',
+      '#.s.sss.s.ss.s.#',
+      '#.s...s.s....s.#',
+      '#.sss.s.ssss.s.#',
+      '#......s.......#',
+      '################']},
+    '2,1': { doors:{ w:'open', n:'lock' }, cond:'quiz',
+      quiz:{ q:'Что означает условие поставки FOB?', opts:['Поставщик сам довезёт товар до нашего склада','Поставщик грузит товар на судно в порту отгрузки, дальше расходы и риски — наши','Оплата только после того, как товар продан'], a:1 },
+      map:[
+      '################',
+      '#..............#',
+      '#ccccccGGcccccc#',
+      '#..............#',
+      '#..............#',
+      '#......Q.......#',
+      '#..............#',
+      '#.s..........s.#',
+      '#..............#',
+      '#..............#',
+      '################']},
+    '2,0': { doors:{ s:'lock' }, cond:'boss', boss:'reseller', map:[
+      '################',
+      '#............Z.#',
+      '#.s..........s.#',
+      '#..............#',
+      '#..............#',
+      '#......M.......#',
+      '#..............#',
+      '#..............#',
+      '#.s..........s.#',
+      '#..............#',
+      '################']}
+  }},
+  { name:'ФАБРИКА', theme:'factory', start:'0,0', startTile:[7,7], rooms:{
+    '0,0': { doors:{ e:'open' },
+      npc:{ kind:'tech', name:'ТЕХНОЛОГ', lines:['Это фабрика. Смотри под ноги — конвейеры!','Пропуск в цех лежит на складе рулонов, к югу от конвейера.','А на тесте по качеству не ошибайся.'] },
+      map:[
+      '################',
+      '#mm..........mm#',
+      '#..............#',
+      '#..m........m..#',
+      '#..............#',
+      '#......N.......#',
+      '#..............#',
+      '#..m........m..#',
+      '#..............#',
+      '#mm..........mm#',
+      '################']},
+    '1,0': { doors:{ w:'shut', e:'shut', s:'shut' }, cond:'enemies', enemy:'defect', map:[
+      '################',
+      '#..............#',
+      '#.>>>>>>>>>>>v.#',
+      '#.^..........v.#',
+      '#.^..E....E..v.#',
+      '#.^..........v.#',
+      '#.^....E.....v.#',
+      '#.^..........v.#',
+      '#.^<<<<<<<<<<<.#',
+      '#..............#',
+      '################']},
+    '1,1': { doors:{ n:'open' }, cond:'boxes', hint:'Задвинь рулоны ткани на метки. Застряли? Выйди и зайди снова.', map:[
+      '################',
+      '#..............#',
+      '#..mm......mm..#',
+      '#..............#',
+      '#...B.....o....#',
+      '#..............#',
+      '#...B.....o....#',
+      '#..............#',
+      '#.........mGm..#',
+      '#.........mKm..#',
+      '################']},
+    '2,0': { doors:{ w:'open', e:'lock' }, cond:'quiz',
+      quiz:{ q:'Что такое AQL при инспекции партии?', opts:['Минимальная партия заказа у фабрики','Допустимый уровень брака при выборочной проверке партии','Срок отшива партии в днях'], a:1 },
+      map:[
+      '################',
+      '#............c.#',
+      '#............c.#',
+      '#..m.........c.#',
+      '#............c.#',
+      '#......Q.....G.#',
+      '#............c.#',
+      '#..m.........c.#',
+      '#............c.#',
+      '#............c.#',
+      '################']},
+    '3,0': { doors:{ w:'lock' }, cond:'boss', boss:'press', map:[
+      '################',
+      '#.Z............#',
+      '#.m..........m.#',
+      '#..............#',
+      '#......M.......#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#.m..........m.#',
+      '#..............#',
+      '################']}
+  }},
+  { name:'ПОРТ И ТАМОЖНЯ', theme:'port', start:'1,2', startTile:[7,7], rooms:{
+    '1,2': { doors:{ n:'open' }, cave:'thermos',
+      npc:{ kind:'logist', name:'ЛОГИСТ', lines:['Порт и таможня. Контейнеры, контейнеры...','Ключ от терминала — в диспетчерской на западе.','Брокер на севере просит «за ускорение». Не плати ему!'] },
+      map:[
+      '###O############',
+      '#xx..........xx#',
+      '#x............x#',
+      '#..............#',
+      '#...xx....xx...#',
+      '#......N.......#',
+      '#...xx....xx...#',
+      '#..............#',
+      '#x............x#',
+      '#xx..........xx#',
+      '################']},
+    '1,1': { doors:{ s:'open', w:'open', e:'open', n:'lock' }, enemy:'drone', map:[
+      '################',
+      '#.....x...x....#',
+      '#.xxx.x.x.x.xx.#',
+      '#.x...x.x...x..#',
+      '#.x.xxx.xxx.x.x#',
+      '#.......E......#',
+      '#.xxx.x.x.xxx..#',
+      '#...x.x.x...x..#',
+      '#.x.x...xxx.x.x#',
+      '#.x...E........#',
+      '################']},
+    '0,1': { doors:{ e:'open' }, cond:'lights', hint:'Включи все 9 прожекторов диспетчерской.', map:[
+      '################',
+      '#xx...xKx....xx#',
+      '#x....xGx.....x#',
+      '#..............#',
+      '#....L.L.L.....#',
+      '#..............#',
+      '#....L.L.L.....#',
+      '#..............#',
+      '#....L.L.L.....#',
+      '#xx..........xx#',
+      '################']},
+    '2,1': { doors:{ w:'open' }, cond:'enemies', enemy:'drone', map:[
+      '################',
+      '#..............#',
+      '#.xx........xx.#',
+      '#.x..........x.#',
+      '#....E....E....#',
+      '#..............#',
+      '#.....xGGx.....#',
+      '#.....xHAx.....#',
+      '#.....xxxx.....#',
+      '#.x....E.....x.#',
+      '################']},
+    '1,0': { doors:{ s:'lock' }, cond:'boss', boss:'broker', map:[
+      '################',
+      '#............Z.#',
+      '#.x..........x.#',
+      '#..............#',
+      '#......M.......#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#.x..........x.#',
+      '#..............#',
+      '################']}
+  }},
+  { name:'ШТАБ МОНОПОЛИСТА', theme:'hq', start:'0,2', startTile:[7,7], rooms:{
+    '0,2': { doors:{ n:'open' },
+      npc:{ kind:'secretary', name:'СЕКРЕТАРЬ', lines:['Господин Монополист вас примет.','Только учтите: из его контрактов ещё никто не уходил...'] },
+      map:[
+      '################',
+      '#pp..........pp#',
+      '#..............#',
+      '#..d........d..#',
+      '#..d........d..#',
+      '#......N.......#',
+      '#..............#',
+      '#..d........d..#',
+      '#..............#',
+      '#pp..........pp#',
+      '################']},
+    '0,1': { doors:{ s:'open', n:'shut' }, cond:'boss', boss:'monopolist', map:[
+      '################',
+      '#p............p#',
+      '#..............#',
+      '#..............#',
+      '#......M.......#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#p............p#',
+      '#..............#',
+      '################']},
+    '0,0': { doors:{ s:'open' },
+      supplier:{ lines:['Вы прошли весь этот путь ради меня?','Честная цена, стабильное качество и сроки — по рукам!'] },
+      map:[
+      '################',
+      '#pp..........pp#',
+      '#..............#',
+      '#....dddddd....#',
+      '#..............#',
+      '#......X.......#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#pp..........pp#',
+      '################']}
+  }}
+];
+
+/* ---------------- состояние игры ---------------- */
+let state = 'title';          // title | play | dialog | quiz | scroll | fade | card | dead | win
+let G = null;                 // прогресс
+let R = null;                 // текущая комната
+let hero = null;
+let frame = 0;
+let scroll = null, fade = null, card = null, dialog = null, caveText = null, toast = null;
+let particles = [];
+
+function newProgress(){
+  return { loc:0, maxHp:6, hp:6, keys:0, args:0, hasFolder:false, deaths:0, time:0,
+           rooms:{}, unlocked:{}, taken:{}, caves:{}, visited:{} };
+}
+function roomState(loc, key){
+  const id = loc + ':' + key;
+  if(!G.rooms[id]) G.rooms[id] = { solved:false };
+  return G.rooms[id];
+}
+
+/* ---------------- сохранение (только удобство) ---------------- */
+const SAVE_KEY = 'buyer-quest-v1';
+function saveCheckpoint(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify({ loc:G.loc, maxHp:G.maxHp, args:G.args, keys:G.keys, hasFolder:G.hasFolder, deaths:G.deaths, time:G.time })); }catch(e){}
+}
+function loadCheckpoint(){
+  try{ const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return s && typeof s.loc === 'number' ? s : null; }catch(e){ return null; }
+}
+
+/* ---------------- звук (WebAudio, 8-бит) ---------------- */
+let AC = null, muted = false;
+function audioInit(){ if(!AC){ try{ AC = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){} } else if(AC.state === 'suspended') AC.resume(); }
+function beep(f, d=.08, type='square', v=.05, slide=0, delay=0){
+  if(!AC || muted) return;
+  const t = AC.currentTime + delay;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, f + slide), t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + .02);
+}
+const SFX = {
+  swing: ()=>beep(700,.06,'square',.035,-400),
+  hit:   ()=>beep(220,.09,'square',.06,-120),
+  hurt:  ()=>beep(160,.25,'sawtooth',.06,-100),
+  pick:  ()=>{ beep(880,.06); beep(1320,.09,'square',.05,0,.06); },
+  key:   ()=>{ beep(660,.07); beep(990,.07,'square',.05,0,.07); beep(1320,.1,'square',.05,0,.14); },
+  solve: ()=>[523,659,784,1046].forEach((f,i)=>beep(f,.13,'square',.05,0,i*.11)),
+  door:  ()=>beep(260,.18,'triangle',.08,240),
+  push:  ()=>beep(90,.06,'triangle',.07),
+  light: ()=>beep(760,.05,'triangle',.05),
+  boss:  ()=>[392,330,262,196].forEach((f,i)=>beep(f,.16,'square',.05,0,i*.12)),
+  die:   ()=>[400,300,200,120].forEach((f,i)=>beep(f,.2,'triangle',.06,0,i*.15)),
+  text:  ()=>beep(1200,.015,'square',.02),
+  win:   ()=>[523,659,784,1046,784,1046,1318].forEach((f,i)=>beep(f,.16,'square',.05,0,i*.13))
+};
+
+/* ---------------- ввод ---------------- */
+const keys = {}, pressed = {}, held = [];
+const KEYMAP = { ArrowUp:'up', KeyW:'up', ArrowDown:'down', KeyS:'down', ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right',
+                 Space:'act', KeyJ:'act', KeyZ:'act', KeyX:'act', Enter:'act' };
+function press(k){ if(!keys[k]){ pressed[k] = true; if(['up','down','left','right'].includes(k)) held.push(k); } keys[k] = true; audioInit(); }
+function release(k){ keys[k] = false; const i = held.indexOf(k); if(i >= 0) held.splice(i,1); }
+addEventListener('keydown', e=>{
+  if(state === 'quiz' && /^Digit[1-3]$/.test(e.code)){ answerQuiz(+e.code.slice(5) - 1); return; }
+  const k = KEYMAP[e.code]; if(!k) return;
+  e.preventDefault(); if(e.repeat) return; press(k);
+});
+addEventListener('keyup', e=>{ const k = KEYMAP[e.code]; if(k){ e.preventDefault(); release(k); } });
+addEventListener('blur', ()=>{ for(const k of Object.keys(keys)) release(k); });
+function hit(k){ if(pressed[k]){ pressed[k] = false; return true; } return false; }
+function curDir(){ return held.length ? held[held.length - 1] : null; }
+
+document.querySelectorAll('#touch [data-k]').forEach(b=>{
+  const k = b.dataset.k;
+  b.addEventListener('pointerdown', e=>{ e.preventDefault(); b.setPointerCapture(e.pointerId); press(k); });
+  const up = e=>{ e.preventDefault(); release(k); };
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+});
+if(matchMedia('(pointer: coarse)').matches) document.getElementById('touch').classList.add('show');
+document.getElementById('mute').onclick = ()=>{ muted = !muted; document.getElementById('mute').textContent = 'ЗВУК: ' + (muted ? 'ВЫКЛ' : 'ВКЛ'); };
+
+/* ---------------- масштаб под экран ---------------- */
+function fit(){
+  const touch = document.getElementById('touch').classList.contains('show');
+  const availW = innerWidth - 24, availH = innerHeight - (touch ? 190 : 70);
+  let s = Math.min(availW / W, availH / H);
+  if(s >= 2) s = Math.floor(s);
+  s = Math.max(1, s);
+  cv.style.width = Math.round(W * s) + 'px';
+  cv.style.height = Math.round(H * s) + 'px';
+}
+addEventListener('resize', fit); fit();
+
+/* ===================================================================
+   РИСОВАНИЕ
+   =================================================================== */
+function rect(x, y, w, h, c){ ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); }
+function orect(x, y, w, h, fill, line=INK){ rect(x, y, w, h, line); rect(x+1, y+1, w-2, h-2, fill); }
+function text(s, x, y, c=INK, align='left'){ ctx.font = FONT; ctx.fillStyle = c; ctx.textAlign = align; ctx.textBaseline = 'top'; ctx.fillText(s, Math.round(x), Math.round(y)); }
+function wrap(s, maxW){
+  ctx.font = FONT; const words = s.split(' '), lines = []; let cur = '';
+  for(const w of words){ const t = cur ? cur + ' ' + w : w; if(ctx.measureText(t).width > maxW && cur){ lines.push(cur); cur = w; } else cur = t; }
+  if(cur) lines.push(cur); return lines;
+}
+function hash(a, b){ return ((a * 73856093) ^ (b * 19349663)) >>> 0; }
+
+function drawFloor(th, x, y, tx, ty){
+  rect(x, y, TS, TS, th.floor);
+  if(th === THEMES.cave) return;
+  const h = hash(tx, ty);
+  if((tx + ty) % 2 === 0) rect(x + 3 + (h % 3), y + 4, 1, 1, th.dot);
+  rect(x + 10, y + 11 - (h % 2), 1, 1, th.dot);
+}
+function drawWall(th, x, y, tx, ty){
+  rect(x, y, TS, TS, th.wall);
+  if(th === THEMES.cave){
+    const h = hash(tx, ty);
+    rect(x + 2 + (h % 4), y + 3, 5, 3, th.wallLo); rect(x + 8, y + 9 + (h % 3), 6, 3, th.wallLo);
+    rect(x + 1, y + 1, 4, 1, th.wallHi); rect(x + 9, y + 7, 4, 1, th.wallHi);
+    return;
+  }
+  rect(x, y, TS, 1, th.wallHi); rect(x, y, 1, TS, th.wallHi);
+  rect(x, y + TS - 1, TS, 1, th.wallLo); rect(x + TS - 1, y, 1, TS, th.wallLo);
+  rect(x + 4, y + 4, 8, 8, th.wallHi); rect(x + 5, y + 5, 6, 6, th.wall);
+}
+function drawTile(t, x, y, tx, ty, th){
+  if(t === '#'){ drawWall(th, x, y, tx, ty); return; }
+  drawFloor(th, x, y, tx, ty);
+  switch(t){
+    case 'd': // стол с монитором
+      orect(x+1, y+5, 14, 9, '#d4a46c', '#7a5531'); rect(x+2, y+12, 12, 1, '#b5824c');
+      orect(x+4, y+1, 8, 6, '#2c3e50'); rect(x+5, y+2, 6, 3, '#9fd3ff'); rect(x+7, y+7, 2, 1, '#2c3e50'); break;
+    case 'p': // растение в горшке
+      orect(x+4, y+10, 8, 6, '#cf7a3c', '#7a3f16');
+      rect(x+3, y+3, 4, 4, '#3aa655'); rect(x+8, y+2, 5, 5, '#2f9149'); rect(x+5, y+6, 6, 4, '#45b862');
+      rect(x+6, y+1, 3, 3, '#45b862'); rect(x+4, y+4, 1, 1, '#a6e3b5'); break;
+    case 'c': // шкаф
+      orect(x+1, y+1, 14, 15, '#b9c6d3', '#5a6b7c'); rect(x+2, y+6, 12, 1, '#5a6b7c'); rect(x+2, y+11, 12, 1, '#5a6b7c');
+      rect(x+6, y+3, 4, 1, '#5a6b7c'); rect(x+6, y+8, 4, 1, '#5a6b7c'); rect(x+6, y+13, 4, 1, '#5a6b7c'); break;
+    case 's': { // стенд выставки
+      const cols = ['#e0603a','#3b82c4','#2fa36b','#9b59b6'], c = cols[hash(tx,ty) % cols.length];
+      orect(x+1, y+7, 14, 9, '#fff8ec', '#8a6a44'); rect(x+1, y+2, 14, 5, c); rect(x+1, y+2, 14, 1, INK);
+      for(let i = 0; i < 4; i++) rect(x+2+i*4, y+6, 2, 2, '#fff'); rect(x+5, y+10, 6, 3, c); break; }
+    case 'x': { // контейнер
+      const cols = ['#e05a4f','#3b82c4','#2fa36b','#f2a33a'], c = cols[hash(tx,ty) % cols.length];
+      orect(x, y+1, 16, 15, c, '#2b3a49'); for(let i = 3; i < 15; i += 3) rect(x+i, y+3, 1, 11, 'rgba(0,0,0,.25)'); break; }
+    case 'm': // станок
+      orect(x+1, y+2, 14, 14, '#9aa7b4', '#46525e'); for(let i = 0; i < 14; i += 4) rect(x+1+i, y+2, 2, 2, '#f2b705');
+      orect(x+4, y+6, 8, 6, '#dfe6ec', '#46525e'); rect(x+7, y+7, 1, 4, '#d8423b'); rect(x+3, y+13, 10, 1, '#46525e'); break;
+    case 'B': break;
+    case 'o': // метка
+      for(let i = 0; i < 14; i += 4){ rect(x+1+i, y+1, 2, 1, th.accent); rect(x+1+i, y+14, 2, 1, th.accent); rect(x+1, y+1+i, 1, 2, th.accent); rect(x+14, y+1+i, 1, 2, th.accent); }
+      rect(x+6, y+6, 4, 4, th.accent); break;
+    case 'Q': // терминал
+      orect(x+1, y+1, 14, 10, '#2c3e50'); rect(x+2, y+2, 12, 8, (frame >> 4) % 2 ? '#7ff0a8' : '#5fd690');
+      rect(x+3, y+3, 5, 1, '#1d5a35'); rect(x+3, y+5, 8, 1, '#1d5a35'); rect(x+3, y+7, 3, 1, '#1d5a35');
+      orect(x+5, y+11, 6, 3, '#9aa7b4'); orect(x+2, y+13, 12, 3, '#cfd8e0'); break;
+    case 'L': break;
+    case 'G': break;
+    case 'S': // лифт
+      orect(x, y, 16, 16, '#c3ccd6', '#46525e'); rect(x+2, y+3, 5, 12, '#e9eef3'); rect(x+9, y+3, 5, 12, '#e9eef3'); rect(x+7, y+3, 2, 12, '#46525e');
+      rect(x+7, y+1, 2, 1, (frame >> 3) % 2 ? '#2fa36b' : '#7fe0a8'); rect(x+6, y+2, 4, 1, (frame >> 3) % 2 ? '#2fa36b' : '#7fe0a8'); break;
+    case 'O': rect(x, y, 16, 16, '#121019'); break;
+    case 'F': { // огонь
+      const f = (frame >> 3) % 2;
+      rect(x+4, y+6, 8, 9, '#e8590c'); rect(x+5+f, y+3, 6, 8, '#ff922b'); rect(x+6, y+1+f, 4, 7, '#ffd43b'); rect(x+7, y+8, 2, 5, '#fff3bf'); break; }
+  }
+  if(CONVEY[t]){
+    rect(x, y, 16, 16, '#8a96a3'); rect(x, y, 16, 1, '#5d6976'); rect(x, y+15, 16, 1, '#5d6976');
+    const [dx, dy] = CONVEY[t], o = (frame >> 1) % 8;
+    for(let i = -8; i < 16; i += 8){
+      if(dx){ const px = dx > 0 ? x + ((i + o) % 16 + 16) % 16 : x + ((i - o) % 16 + 16) % 16; chevron(px, y + 5, dx, 0); }
+      else  { const py = dy > 0 ? y + ((i + o) % 16 + 16) % 16 : y + ((i - o) % 16 + 16) % 16; chevron(x + 5, py, 0, dy); }
+    }
+  }
+}
+function chevron(x, y, dx, dy){
+  const c = '#f2b705';
+  if(dx > 0){ rect(x, y, 2, 2, c); rect(x+2, y+2, 2, 2, c); rect(x, y+4, 2, 2, c); }
+  if(dx < 0){ rect(x+2, y, 2, 2, c); rect(x, y+2, 2, 2, c); rect(x+2, y+4, 2, 2, c); }
+  if(dy > 0){ rect(x, y, 2, 2, c); rect(x+2, y+2, 2, 2, c); rect(x+4, y, 2, 2, c); }
+  if(dy < 0){ rect(x, y+2, 2, 2, c); rect(x+2, y, 2, 2, c); rect(x+4, y+2, 2, 2, c); }
+}
+function drawBox(x, y){
+  orect(x+1, y+1, 14, 14, '#d9a865', '#7a5531'); rect(x+7, y+2, 2, 12, '#f0d29b'); rect(x+2, y+7, 12, 2, '#f0d29b');
+  rect(x+2, y+2, 3, 1, '#ecc589');
+}
+function drawLight(x, y, on){
+  orect(x+1, y+1, 14, 14, on ? '#ffe066' : '#cfd6dd', '#46525e');
+  if(on){ rect(x+3, y+3, 10, 10, '#fff3bf'); rect(x+5, y+5, 6, 6, '#ffffff'); }
+  else { rect(x+4, y+4, 8, 8, '#b4bdc6'); }
+}
+function drawGate(x, y){
+  rect(x+1, y+2, 2, 13, '#46525e'); rect(x+13, y+2, 2, 13, '#46525e');
+  for(let i = 0; i < 12; i += 4){ rect(x+3+i, y+6, 2, 3, '#d8423b'); rect(x+5+i, y+6, 2, 3, '#ffffff'); }
+  rect(x+3, y+5, 10, 1, INK); rect(x+3, y+9, 10, 1, INK); rect(x+1, y+1, 2, 2, (frame >> 4) % 2 ? '#d8423b' : '#ff8a80');
+}
+function drawItem(kind, x, y){
+  const bob = (frame >> 4) % 2;
+  y -= bob;
+  if(kind === 'K'){ // бейдж
+    orect(x+3, y+4, 10, 11, '#3b82c4'); rect(x+5, y+7, 6, 4, '#ffffff'); rect(x+6, y+8, 2, 2, '#f3c9a1'); rect(x+5, y+12, 6, 1, '#cfe3ff');
+    rect(x+7, y+1, 2, 4, '#9aa7b4');
+  } else if(kind === 'H'){ // кофе
+    orect(x+3, y+5, 9, 10, '#ffffff'); rect(x+4, y+6, 7, 2, '#7a4a25'); rect(x+12, y+7, 2, 5, INK); rect(x+13, y+8, 1, 3, '#ffffff');
+    rect(x+5, y+1, 1, 3, '#c5ced8'); rect(x+8, y+2, 1, 2, '#c5ced8');
+  } else if(kind === 'A'){ // аргумент — монета-лампочка
+    rect(x+4, y+2, 8, 9, INK); rect(x+5, y+3, 6, 7, '#ffd43b'); rect(x+6, y+4, 2, 2, '#fff3bf');
+    orect(x+6, y+11, 4, 4, '#9aa7b4');
+  } else if(kind === 'C'){ // большая чашка — +1 к запасу
+    orect(x+2, y+3, 12, 12, '#ffffff'); rect(x+3, y+4, 10, 3, '#7a4a25'); rect(x+14, y+6, 2, 6, INK);
+    rect(x+5, y+9, 6, 4, '#d8423b'); rect(x+7, y+8, 2, 6, '#d8423b');
+  } else if(kind === 'folder' || kind === 'Y'){
+    drawFolderIcon(x, y + 2);
+  } else if(kind === 'args10'){
+    orect(x+2, y+2, 12, 13, '#ffffff'); for(let i = 0; i < 4; i++) rect(x+4, y+5 + i*2, 8, 1, '#5b6b7d'); rect(x+9, y+11, 4, 3, '#d8423b');
+  } else if(kind === 'thermos'){
+    orect(x+5, y+1, 6, 15, '#d8423b'); rect(x+6, y+5, 4, 6, '#ffffff'); rect(x+5, y+1, 6, 2, INK);
+  }
+}
+function drawFolderIcon(x, y){
+  orect(x+1, y+3, 14, 10, '#f2b134', '#8a5a0a'); rect(x+2, y+2, 6, 2, '#f2b134'); rect(x+1, y+1, 8, 1, '#8a5a0a');
+  rect(x+3, y+6, 9, 1, '#ffffff'); rect(x+3, y+8, 7, 1, '#ffffff');
+}
+
+/* персонажи */
+function drawPerson(x, y, o){
+  x = Math.round(x); y = Math.round(y);
+  const f = o.facing || 'down', step = o.step || 0;
+  rect(x+3, y+14, 10, 2, 'rgba(29,43,58,.15)');
+  // ноги
+  const ll = step ? 3 : 4, rl = step ? 4 : 3;
+  rect(x+4, y+11, 3, ll, o.pants); rect(x+9, y+11, 3, rl, o.pants);
+  rect(x+4, y+11+ll-1, 3, 1, INK); rect(x+9, y+11+rl-1, 3, 1, INK);
+  // тело
+  rect(x+3, y+6, 10, 6, INK); rect(x+4, y+7, 8, 4, o.shirt);
+  if(o.jacket){ rect(x+4, y+7, 2, 4, o.jacket); rect(x+10, y+7, 2, 4, o.jacket); }
+  if(o.tie && f === 'down') rect(x+7, y+7, 2, 4, o.tie);
+  // голова
+  rect(x+4, y, 8, 7, INK); rect(x+5, y+1, 6, 5, o.skin || '#f3c9a1');
+  const hair = o.hair || '#5a3b26';
+  if(f === 'up') rect(x+5, y+1, 6, 5, hair);
+  else {
+    rect(x+5, y+1, 6, 2, hair);
+    if(f === 'left') rect(x+9, y+1, 2, 4, hair);
+    if(f === 'right') rect(x+5, y+1, 2, 4, hair);
+    if(f === 'down'){ rect(x+6, y+4, 1, 1, INK); rect(x+9, y+4, 1, 1, INK); }
+    if(f === 'left') rect(x+6, y+4, 1, 1, INK);
+    if(f === 'right') rect(x+9, y+4, 1, 1, INK);
+  }
+  if(o.beard && f !== 'up'){ rect(x+5, y+4, 6, 3, o.beard); rect(x+6, y+7, 4, 2, o.beard); }
+  if(o.glasses && f === 'down'){ rect(x+5, y+3, 6, 1, INK); }
+  if(o.cap){ rect(x+4, y, 8, 2, o.cap); if(f === 'down') rect(x+4, y+2, 9, 1, o.cap); }
+  if(o.bag){
+    const bx = (f === 'left' || f === 'up') ? x : x + 12;
+    rect(bx, y+9, 4, 4, INK); rect(bx+1, y+10, 2, 2, o.bag);
+  }
+}
+const NPC_LOOK = {
+  boss:      { shirt:'#ffffff', jacket:'#34495e', pants:'#34495e', tie:'#3b82c4', hair:'#8a8f98' },
+  elder:     { shirt:'#b03a2e', jacket:'#b03a2e', pants:'#7b241c', hair:'#e9edf1', beard:'#ffffff' },
+  merch:     { shirt:'#2fa36b', pants:'#1e6f48', hair:'#2b1a10', cap:'#2fa36b' },
+  host:      { shirt:'#e0603a', pants:'#5b2a1a', hair:'#2b1a10' },
+  tech:      { shirt:'#f2b705', pants:'#3d4a57', hair:'#5a3b26', cap:'#ffffff' },
+  logist:    { shirt:'#1f8f8a', pants:'#16504d', hair:'#2b1a10', cap:'#f2a33a' },
+  secretary: { shirt:'#f7c6d9', pants:'#5b2a4a', hair:'#3a2418', glasses:true },
+  supplier:  { shirt:'#e8f7ee', jacket:'#2fa36b', pants:'#1e6f48', tie:'#f2b134', hair:'#6b3e1f' }
+};
+const HERO_LOOK = { shirt:'#d8e8ff', pants:'#2f4a7a', tie:'#d8423b', hair:'#5a3b26', bag:'#9a5a2a' };
+
+function drawEnemy(e){
+  const x = Math.round(e.x), y = Math.round(e.y), a = (frame >> 3) % 2;
+  if(e.inv > 0 && (frame >> 1) % 2) return;
+  rect(x+3, y+14, 10, 2, 'rgba(29,43,58,.15)');
+  if(e.type === 'spam'){
+    const yy = y + (a ? 0 : 1);
+    orect(x+1, yy+4, 14, 10, '#ffffff'); rect(x+2, yy+5, 2, 1, INK); rect(x+4, yy+6, 2, 1, INK); rect(x+6, yy+7, 4, 1, INK);
+    rect(x+10, yy+6, 2, 1, INK); rect(x+12, yy+5, 2, 1, INK);
+    rect(x+5, yy+9, 2, 2, '#d8423b'); rect(x+9, yy+9, 2, 2, '#d8423b');
+    rect(x, yy+(a ? 3 : 6), 2, 4, '#9fd3ff'); rect(x+14, yy+(a ? 3 : 6), 2, 4, '#9fd3ff');
+    rect(x+6, yy+1, 4, 3, '#d8423b'); text('@', x+5, yy-6, '#d8423b');
+  } else if(e.type === 'promoter'){
+    drawPerson(x, y, { facing:e.dir, step:a, shirt:'#ff6b6b', pants:'#6b2f2f', hair:'#2b1a10', cap:'#ffd43b' });
+    orect(x+(e.dir === 'left' ? -2 : 12), y+5, 6, 7, '#ffffff'); rect(x+(e.dir === 'left' ? -1 : 13), y+7, 4, 1, '#ff6b6b');
+  } else if(e.type === 'defect'){
+    const yy = y - (a ? 2 : 0);
+    rect(x+1, yy+3, 14, 5, INK); rect(x+3, yy+3, 10, 12, INK);
+    rect(x+2, yy+4, 12, 3, '#b8c2cc'); rect(x+4, yy+4, 8, 10, '#b8c2cc');
+    rect(x+6, yy+3, 4, 2, '#eceff3'); rect(x+5, yy+8, 4, 3, '#8a6a44'); rect(x+10, yy+11, 2, 2, '#8a6a44');
+    rect(x+5, yy+6, 1, 1, INK); rect(x+10, yy+6, 1, 1, INK);
+  } else if(e.type === 'drone'){
+    orect(x+3, y+6, 10, 6, '#9aa7b4', '#2b3a49'); rect(x+7, y+8, 2, 2, (frame >> 2) % 2 ? '#d8423b' : '#ff8a80');
+    rect(x+1, y+5, 4, 1, INK); rect(x+11, y+5, 4, 1, INK);
+    rect(x+(a ? 0 : 2), y+3, 4, 1, '#5b6b7d'); rect(x+(a ? 12 : 10), y+3, 4, 1, '#5b6b7d');
+    rect(x+2, y+4, 1, 2, INK); rect(x+13, y+4, 1, 2, INK);
+  }
+}
+function drawBoss(b){
+  if(b.inv > 0 && (frame >> 1) % 2) return;
+  const x = Math.round(b.x), y = Math.round(b.y), a = (frame >> 3) % 2;
+  rect(x+3, y+22, 18, 3, 'rgba(29,43,58,.18)');
+  const body = (shirt, jacket, pants, hair, skin='#f3c9a1')=>{
+    rect(x+6, y+16, 5, 7, pants); rect(x+13, y+16, 5, 7, pants); rect(x+6, y+22, 5, 1, INK); rect(x+13, y+22, 5, 1, INK);
+    rect(x+3, y+9, 18, 9, INK); rect(x+4, y+10, 16, 7, shirt); if(jacket){ rect(x+4, y+10, 5, 7, jacket); rect(x+15, y+10, 5, 7, jacket); }
+    rect(x+6, y, 12, 10, INK); rect(x+7, y+1, 10, 8, skin); rect(x+7, y+1, 10, 3, hair);
+    rect(x+9, y+5, 2, 2, INK); rect(x+13, y+5, 2, 2, INK); rect(x+10, y+8, 4, 1, INK);
+  };
+  switch(b.type){
+    case 'bureaucrat':
+      body('#ffffff', '#7f8c8d', '#566573', '#7f8c8d');
+      rect(x+8, y+5, 8, 1, INK); rect(x+11, y+10, 2, 6, '#7f8c8d');
+      for(let i = 0; i < 4; i++) orect(x+5 + (i % 2), y-8 + i*2 - a, 14, 3, '#ffffff', '#9aa7b4'); break;
+    case 'reseller':
+      body('#f7e1ff', '#8e44ad', '#4a235a', '#2b1a10');
+      rect(x+8, y+4, 9, 2, INK); rect(x+9, y+12, 6, 1, '#f2b134'); rect(x+10, y+13, 4, 1, '#f2b134'); break;
+    case 'press': {
+      const p = (frame % 60) < 20 ? 4 : 0;
+      orect(x, y+6, 24, 18, '#9aa7b4', '#2b3a49'); for(let i = 0; i < 24; i += 6) rect(x+i, y+6, 3, 3, '#f2b705');
+      orect(x+7, y-2 + p, 10, 10, '#c3ccd6', '#2b3a49'); rect(x+5, y+14, 14, 4, '#2b3a49');
+      rect(x+6, y+15, 4, 2, '#ff6b6b'); rect(x+14, y+15, 4, 2, '#ff6b6b'); break; }
+    case 'broker':
+      body('#dfe9f5', '#1f3a5f', '#1f3a5f', '#2b1a10');
+      rect(x+5, y-1, 14, 3, '#1f3a5f'); rect(x+5, y+2, 15, 1, INK);
+      orect(x+18, y+6 - a, 6, 7, '#d8423b'); rect(x+19, y+13 - a, 4, 2, '#7b241c'); break;
+    case 'monopolist':
+      body('#ffffff', '#1d1d1d', '#1d1d1d', '#9aa0a6');
+      rect(x+11, y+10, 2, 7, '#f2b134'); rect(x+13, y+4, 3, 3, '#f2b134');
+      rect(x+6, y-6, 12, 7, '#1d1d1d'); rect(x+3, y, 18, 2, '#1d1d1d'); rect(x+6, y-2, 12, 1, '#d8423b');
+      if(a) text('$', x+20, y+2, '#2fa36b'); break;
+  }
+}
+function drawProj(p){
+  const x = Math.round(p.x), y = Math.round(p.y);
+  if(p.kind === 'paper' || p.kind === 'flyer'){ orect(x-3, y-4, 7, 8, p.kind === 'paper' ? '#ffffff' : '#ffd43b'); rect(x-2, y-2, 5, 1, '#9aa7b4'); rect(x-2, y, 4, 1, '#9aa7b4'); }
+  else if(p.kind === 'bolt'){ rect(x-3, y-3, 6, 6, INK); rect(x-2, y-2, 4, 4, '#f2b705'); }
+  else if(p.kind === 'stamp'){ rect(x-3, y-3, 7, 7, '#7b241c'); rect(x-2, y-2, 5, 5, '#d8423b'); }
+  else if(p.kind === 'coin'){ rect(x-3, y-3, 7, 7, INK); rect(x-2, y-2, 5, 5, '#ffd43b'); rect(x-1, y-1, 1, 2, '#fff3bf'); }
+}
+
+/* ===================================================================
+   КОМНАТЫ
+   =================================================================== */
+function doorAt(tx, ty){
+  if(ty === 0 && (tx === 7 || tx === 8)) return 'n';
+  if(ty === ROWS-1 && (tx === 7 || tx === 8)) return 's';
+  if(tx === 0 && ty === 5) return 'w';
+  if(tx === COLS-1 && ty === 5) return 'e';
+  return null;
+}
+const OPP = { n:'s', s:'n', e:'w', w:'e' };
+const DV = { n:[0,-1], s:[0,1], e:[1,0], w:[-1,0] };
+function edgeKey(loc, key, d){
+  const [c, r] = key.split(',').map(Number), [dx, dy] = DV[d];
+  const other = (c + dx) + ',' + (r + dy);
+  return loc + ':' + [key + d, other + OPP[d]].sort().join('|');
+}
+function doorState(room, d){
+  const t = room.cfg.doors && room.cfg.doors[d];
+  if(!t) return null;
+  if(t === 'open') return 'open';
+  if(t === 'lock') return G.unlocked[edgeKey(room.loc, room.key, d)] ? 'open' : 'lock';
+  if(t === 'shut') return room.st.solved ? 'open' : 'shut';
+  return 'open';
+}
+
+function loadRoom(loc, key){
+  const cfg = LOCS[loc].rooms[key];
+  const st = roomState(loc, key);
+  if(!cfg.cond) st.solved = true;
+  const room = { loc, key, cfg, st, theme:THEMES[LOCS[loc].theme], grid:[], boxes:[], pads:[], lights:[], items:[], enemies:[], npcs:[],
+                 boss:null, proj:[], hiddenLift:null, cave:null };
+  G.visited[loc + ':' + key] = true;
+  cfg.map.forEach((row, ty)=>{
+    if(row.length !== COLS) console.error('room', loc, key, 'row', ty, 'len', row.length);
+    const line = [];
+    for(let tx = 0; tx < COLS; tx++){
+      let t = row[tx];
+      if(t === 'B'){ room.boxes.push({ tx, ty, ox:tx, oy:ty, anim:0, fx:0, fy:0 }); t = '.'; }
+      else if(t === 'o'){ room.pads.push({ tx, ty }); }
+      else if(t === 'L'){ room.lights.push({ tx, ty, on:false }); }
+      else if(t === 'E'){ room.enemies.push(makeEnemy(cfg.enemy, tx, ty)); t = '.'; }
+      else if(t === 'M'){ if(!st.solved) room.boss = makeBoss(cfg.boss, tx*TS - 4, ty*TS - 8); t = '.'; }
+      else if(t === 'K' || t === 'H' || t === 'A'){
+        const id = loc + ':' + key + ':' + tx + ',' + ty;
+        if(!G.taken[id]) room.items.push({ x:tx*TS, y:ty*TS, kind:t, id });
+        t = '.';
+      }
+      else if(t === 'Z'){ room.hiddenLift = { tx, ty }; t = st.solved ? 'S' : '.'; }
+      else if(t === 'N'){ room.npcs.push({ tx, ty, kind:cfg.npc.kind, name:cfg.npc.name, lines:cfg.npc.lines, facing:'down' }); }
+      else if(t === 'X'){ room.npcs.push({ tx, ty, kind:'supplier', name:'ПОСТАВЩИК', lines:cfg.supplier.lines, supplier:true, facing:'down' }); }
+      else if(t === 'Q'){ room.quizTile = { tx, ty }; }
+      else if(t === 'O'){ room.cave = { tx, ty, id:cfg.cave }; }
+      line.push(t);
+    }
+    room.grid.push(line);
+  });
+  if(st.solved){
+    if(cfg.cond === 'enemies') room.enemies = [];
+    if(cfg.cond === 'boxes') room.boxes.forEach((b, i)=>{ const p = room.pads[i]; if(p){ b.tx = p.tx; b.ty = p.ty; } });
+    if(cfg.cond === 'lights') room.lights.forEach(l=>l.on = true);
+  }
+  return room;
+}
+function loadCave(id, parent){
+  const c = CAVES[id];
+  const room = { loc:parent.loc, key:'cave:' + id, cfg:{ map:CAVE_MAP, doors:{} }, st:{ solved:true }, theme:THEMES.cave,
+                 grid:CAVE_MAP.map(r=>r.split('')), boxes:[], pads:[], lights:[], items:[], enemies:[], npcs:[], boss:null, proj:[], isCave:true,
+                 caveId:id, parent };
+  room.grid.forEach((row, ty)=>row.forEach((t, tx)=>{
+    if(t === 'N'){ room.npcs.push({ tx, ty, kind:c.npc, name:'', lines:[c.text], facing:'down' }); }
+    if(t === 'Y'){ if(!G.caves[id]) room.items.push({ x:tx*TS, y:ty*TS, kind:c.item, cave:id }); row[tx] = '.'; }
+  }));
+  return room;
+}
+
+function makeEnemy(type, tx, ty){
+  const d = ENEMY[type] || ENEMY.spam;
+  const dirs = ['up','down','left','right'];
+  return { type, x:tx*TS, y:ty*TS, hp:d.hp, speed:d.speed, dir:dirs[Math.random()*4|0], t:20 + (Math.random()*60|0), inv:0, kb:0, kvx:0, kvy:0,
+           bx:2, by:3, bw:12, bh:12, vx:Math.random() < .5 ? -1 : 1, vy:Math.random() < .5 ? -1 : 1, spawn:24 };
+}
+function makeBoss(type, x, y){
+  const d = BOSSES[type];
+  return { type, x, y, hp:d.hp, max:d.hp, t:0, inv:0, bx:2, by:2, bw:20, bh:20, tx:x, ty:y, dash:0, dvx:0, dvy:0, summonT:200, intro:40 };
+}
+
+/* ---------------- коллизии ---------------- */
+function solidTile(tx, ty, forEnemy){
+  if(tx < 0 || ty < 0 || tx >= COLS || ty >= ROWS) return !!forEnemy;
+  const d = doorAt(tx, ty);
+  if(d && R.cfg.doors && R.cfg.doors[d]){
+    if(forEnemy) return true;
+    return doorState(R, d) !== 'open';
+  }
+  const t = R.grid[ty][tx];
+  if(SOLID.has(t)) return true;
+  if(t === 'G') return !R.st.solved;
+  if(forEnemy && (t === 'O' || t === 'S')) return true;
+  if(R.isCave && ty === ROWS-1 && forEnemy) return true;
+  for(const b of R.boxes) if(b.tx === tx && b.ty === ty) return true;
+  return false;
+}
+function boxHit(x, y, w, h, forEnemy){
+  const x0 = Math.floor(x / TS), x1 = Math.floor((x + w - .01) / TS);
+  const y0 = Math.floor(y / TS), y1 = Math.floor((y + h - .01) / TS);
+  for(let ty = y0; ty <= y1; ty++) for(let tx = x0; tx <= x1; tx++) if(solidTile(tx, ty, forEnemy)) return { tx, ty };
+  return null;
+}
+function moveEnt(e, dx, dy, forEnemy){
+  let hitT = null;
+  if(dx){ e.x += dx; const h = boxHit(e.x + e.bx, e.y + e.by, e.bw, e.bh, forEnemy); if(h){ e.x -= dx; hitT = h; } }
+  if(dy){ e.y += dy; const h = boxHit(e.x + e.bx, e.y + e.by, e.bw, e.bh, forEnemy); if(h){ e.y -= dy; hitT = hitT || h; } }
+  return hitT;
+}
+function overlap(a, b){
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+function heroBox(){ return { x:hero.x + hero.bx, y:hero.y + hero.by, w:hero.bw, h:hero.bh }; }
+function entBox(e){ return { x:e.x + e.bx, y:e.y + e.by, w:e.bw, h:e.bh }; }
+
+/* ===================================================================
+   ЛОГИКА
+   =================================================================== */
+function makeHero(tx, ty){
+  return { x:tx*TS, y:ty*TS - 4, bx:3, by:6, bw:10, bh:9, facing:'up', walk:0, atk:0, cd:0, inv:0, kb:0, kvx:0, kvy:0, push:0, cell:null };
+}
+function startLocation(loc){
+  G.loc = loc; G.hp = G.maxHp;
+  const L = LOCS[loc];
+  R = loadRoom(loc, L.start);
+  hero = makeHero(L.startTile[0], L.startTile[1]);
+  saveCheckpoint();
+  card = { t:110, title:'ЛОКАЦИЯ ' + (loc + 1), name:L.name };
+  state = 'card';
+}
+
+function say(name, lines, after){
+  dialog = { name, lines, i:0, shown:0, after };
+  state = 'dialog';
+}
+function showToast(s){ toast = { s, t:150 }; }
+
+function solve(){
+  R.st.solved = true;
+  if(R.hiddenLift) R.grid[R.hiddenLift.ty][R.hiddenLift.tx] = 'S';
+  SFX.solve();
+}
+function condMet(){
+  switch(R.cfg.cond){
+    case 'enemies': return R.enemies.length === 0;
+    case 'boxes':   return R.pads.every(p=>R.boxes.some(b=>b.tx === p.tx && b.ty === p.ty && b.anim === 0));
+    case 'lights':  return R.lights.every(l=>l.on);
+    case 'boss':    return !R.boss;
+    case 'item':    return G.hasFolder;
+    case 'quiz':    return false;
+  }
+  return true;
+}
+
+function hurtHero(sx, sy, dmg=1){
+  if(hero.inv > 0 || state !== 'play') return;
+  G.hp -= dmg; hero.inv = 60; SFX.hurt();
+  const cx = hero.x + 8, cy = hero.y + 10; let dx = cx - sx, dy = cy - sy; const l = Math.hypot(dx, dy) || 1;
+  hero.kb = 8; hero.kvx = dx / l * 2.5; hero.kvy = dy / l * 2.5;
+  if(G.hp <= 0){ G.hp = 0; G.deaths++; SFX.die(); state = 'dead'; showOverlay('dead'); }
+}
+function poof(x, y, c='#ffffff'){ for(let i = 0; i < 8; i++){ const a = i / 8 * Math.PI * 2; particles.push({ x, y, vx:Math.cos(a)*1.2, vy:Math.sin(a)*1.2, t:18, c }); } }
+
+function frontPoint(dist=12){
+  const [dx, dy] = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] }[hero.facing];
+  return { x:hero.x + 8 + dx*dist, y:hero.y + 10 + dy*dist };
+}
+function tryInteract(){
+  const p = frontPoint(12), tx = Math.floor(p.x / TS), ty = Math.floor(p.y / TS);
+  for(const n of R.npcs){
+    if(n.tx === tx && n.ty === ty){
+      n.facing = { up:'down', down:'up', left:'right', right:'left' }[hero.facing];
+      if(n.supplier){ say('ПОСТАВЩИК', n.lines, ()=>{ finishGame(); }); }
+      else if(R.isCave){ say('', n.lines); }
+      else say(n.name, n.lines);
+      return true;
+    }
+  }
+  if(R.quizTile && R.quizTile.tx === tx && R.quizTile.ty === ty){
+    if(R.st.solved) showToast('ТЕСТ УЖЕ ПРОЙДЕН');
+    else openQuiz(R.cfg.quiz);
+    return true;
+  }
+  return false;
+}
+
+function attackBox(){
+  const x = hero.x, y = hero.y;
+  switch(hero.facing){
+    case 'right': return { x:x+13, y:y+6, w:13, h:7 };
+    case 'left':  return { x:x-10, y:y+6, w:13, h:7 };
+    case 'up':    return { x:x+5,  y:y-10, w:7, h:13 };
+    default:      return { x:x+5,  y:y+13, w:7, h:13 };
+  }
+}
+
+function updateHero(){
+  const h = hero;
+  if(h.inv > 0) h.inv--;
+  if(h.cd > 0) h.cd--;
+  if(h.kb > 0){ moveEnt(h, h.kvx, 0); moveEnt(h, 0, h.kvy); h.kb--; }
+
+  if(hit('act')){
+    if(!tryInteract() && G.hasFolder && h.cd === 0){ h.atk = 14; h.cd = 20; SFX.swing(); }
+    else if(!G.hasFolder && !R.isCave && !R.npcs.length) showToast('НУЖНА ПАПКА С КП');
+  }
+  if(h.atk > 0) h.atk--;
+
+  const d = h.atk > 0 ? null : curDir();
+  let moving = false;
+  if(d){
+    h.facing = d; moving = true;
+    const sp = 1.25, v = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] }[d];
+    const hitT = moveEnt(h, v[0]*sp, v[1]*sp);
+    // выравнивание по сетке (как в Zelda) — легче проходить в проёмы
+    if(v[0]){ const ty = Math.round((h.y + 4) / 8) * 8 - 4, df = ty - h.y; if(Math.abs(df) > .1) moveEnt(h, 0, Math.sign(df) * Math.min(.7, Math.abs(df))); }
+    if(v[1]){ const tx = Math.round(h.x / 8) * 8, df = tx - h.x; if(Math.abs(df) > .1) moveEnt(h, Math.sign(df) * Math.min(.7, Math.abs(df)), 0); }
+    if(hitT) onBump(hitT, v); else h.push = 0;
+    h.walk++;
+  } else h.push = 0;
+  if(!moving) h.walk = 0;
+
+  // конвейер
+  const cx = h.x + 8, cy = h.y + 11, ctx_ = Math.floor(cx / TS), cty = Math.floor(cy / TS);
+  const tUnder = (cty >= 0 && cty < ROWS && ctx_ >= 0 && ctx_ < COLS) ? R.grid[cty][ctx_] : '.';
+  if(CONVEY[tUnder]){ const [vx, vy] = CONVEY[tUnder]; moveEnt(h, vx*.75, vy*.75); }
+
+  // смена клетки: плитки-свет, лифт, проход в архив
+  const cell = ctx_ + ',' + cty;
+  if(cell !== h.cell){
+    h.cell = cell;
+    const L = R.lights.find(l=>l.tx === ctx_ && l.ty === cty);
+    if(L && !R.st.solved) toggleLights(L);
+    if(tUnder === 'S'){ nextLocation(); return; }
+    if(tUnder === 'O' && R.cave){ enterCave(); return; }
+  }
+
+  // предметы
+  for(let i = R.items.length - 1; i >= 0; i--){
+    const it = R.items[i];
+    if(Math.abs(it.x + 8 - cx) < 11 && Math.abs(it.y + 8 - (h.y + 10)) < 11) pickItem(it, i);
+  }
+
+  // атака
+  if(h.atk > 2 && h.atk < 13){
+    const ab = attackBox();
+    for(const e of R.enemies){
+      if(e.inv === 0 && e.spawn <= 0 && overlap(ab, entBox(e))){
+        e.hp--; e.inv = 16; SFX.hit();
+        const l = Math.hypot(e.x - h.x, e.y - h.y) || 1; e.kb = 8; e.kvx = (e.x - h.x)/l*2.5; e.kvy = (e.y - h.y)/l*2.5;
+      }
+    }
+    if(R.boss && R.boss.inv === 0 && R.boss.intro <= 0 && overlap(ab, entBox(R.boss))){
+      R.boss.hp--; R.boss.inv = 24; SFX.hit();
+      if(R.boss.hp <= 0){
+        poof(R.boss.x + 12, R.boss.y + 12, '#ffd43b'); poof(R.boss.x + 12, R.boss.y + 12, '#ffffff');
+        R.items.push({ x:Math.round((R.boss.x + 4) / TS) * TS, y:Math.round((R.boss.y + 4) / TS) * TS, kind:'C' });
+        R.boss = null; R.proj = []; SFX.boss();
+      }
+    }
+    for(let i = R.proj.length - 1; i >= 0; i--){ const p = R.proj[i]; if(overlap(ab, { x:p.x-3, y:p.y-3, w:7, h:7 })) R.proj.splice(i, 1); }
+  }
+
+  // выход за край комнаты
+  if(R.isCave){ if(h.y + 11 > PH){ exitCave(); } return; }
+  if(cx < 1) startScroll('w');
+  else if(cx > W - 1) startScroll('e');
+  else if(h.y + h.by < -2) startScroll('n');
+  else if(h.y + h.by + h.bh > PH + 2) startScroll('s');
+}
+
+function onBump(t, v){
+  const h = hero;
+  // запертая дверь
+  const d = doorAt(t.tx, t.ty);
+  if(d && R.cfg.doors && R.cfg.doors[d] && doorState(R, d) === 'lock'){
+    if(G.keys > 0){ G.keys--; G.unlocked[edgeKey(R.loc, R.key, d)] = true; SFX.door(); showToast('ДВЕРЬ ОТКРЫТА БЕЙДЖЕМ'); }
+    else if(!h.lockMsg || frame - h.lockMsg > 120){ h.lockMsg = frame; showToast('НУЖЕН БЕЙДЖ-КЛЮЧ'); }
+    return;
+  }
+  if(d && R.cfg.doors && R.cfg.doors[d] && doorState(R, d) === 'shut'){
+    if(!h.lockMsg || frame - h.lockMsg > 120){ h.lockMsg = frame; showToast(R.cfg.cond === 'item' ? 'СНАЧАЛА ВОЗЬМИ ПАПКУ С КП' : 'ДВЕРЬ ЗАКРЫТА'); }
+    return;
+  }
+  // толкаем коробку
+  const b = R.boxes.find(b=>b.tx === t.tx && b.ty === t.ty);
+  if(b && b.anim === 0){
+    const aligned = v[0] ? Math.abs((h.y + 10) - (b.ty*TS + 8)) < 6 : Math.abs((h.x + 8) - (b.tx*TS + 8)) < 6;
+    if(!aligned){ h.push = 0; return; }
+    if(++h.push > 10){
+      const nx = b.tx + v[0], ny = b.ty + v[1];
+      const nt = (nx >= 0 && ny >= 0 && nx < COLS && ny < ROWS) ? R.grid[ny][nx] : '#';
+      const free = (nt === '.' || nt === 'o') && !doorAt(nx, ny) && !R.boxes.some(o=>o.tx === nx && o.ty === ny)
+        && !R.enemies.some(e=>overlap(entBox(e), { x:nx*TS, y:ny*TS, w:TS, h:TS }));
+      if(free){ b.fx = b.tx; b.fy = b.ty; b.tx = nx; b.ty = ny; b.anim = 8; SFX.push(); }
+      h.push = 0;
+    }
+  }
+}
+
+function toggleLights(L){
+  const xs = [...new Set(R.lights.map(l=>l.tx))].sort((a,b)=>a-b);
+  const ys = [...new Set(R.lights.map(l=>l.ty))].sort((a,b)=>a-b);
+  const ix = xs.indexOf(L.tx), iy = ys.indexOf(L.ty);
+  for(const l of R.lights){
+    const jx = xs.indexOf(l.tx), jy = ys.indexOf(l.ty);
+    if((jx === ix && Math.abs(jy - iy) <= 1) || (jy === iy && Math.abs(jx - ix) <= 1)) l.on = !l.on;
+  }
+  SFX.light();
+}
+
+function pickItem(it, i){
+  R.items.splice(i, 1);
+  if(it.id) G.taken[it.id] = true;
+  if(it.kind === 'K'){ G.keys++; SFX.key(); showToast('БЕЙДЖ-КЛЮЧ!'); }
+  else if(it.kind === 'H'){ G.hp = Math.min(G.maxHp, G.hp + 2); SFX.pick(); }
+  else if(it.kind === 'A'){ G.args++; SFX.pick(); }
+  else if(it.kind === 'C'){ G.maxHp = Math.min(16, G.maxHp + 2); G.hp = G.maxHp; SFX.key(); showToast('+1 ЧАШКА К ЗАПАСУ КОФЕ'); }
+  else if(it.cave){
+    G.caves[it.cave] = true; const c = CAVES[it.cave];
+    if(it.kind === 'folder') G.hasFolder = true;
+    if(it.kind === 'args10') G.args += 10;
+    if(it.kind === 'thermos'){ G.maxHp = Math.min(16, G.maxHp + 2); G.hp = G.maxHp; }
+    SFX.key(); say('', [c.got]);
+  }
+}
+
+function updateEnemies(){
+  for(let i = R.enemies.length - 1; i >= 0; i--){
+    const e = R.enemies[i];
+    if(e.spawn > 0){ e.spawn--; continue; }
+    if(e.inv > 0) e.inv--;
+    if(e.kb > 0){ moveEnt(e, e.kvx, 0, true); moveEnt(e, 0, e.kvy, true); e.kb--; }
+    else {
+      const sp = e.speed;
+      if(e.type === 'spam'){
+        if(--e.t <= 0){ e.dir = ['up','down','left','right'][Math.random()*4|0]; e.t = 30 + (Math.random()*70|0); }
+        const v = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] }[e.dir];
+        if(moveEnt(e, v[0]*sp, v[1]*sp, true)) e.t = 0;
+      } else if(e.type === 'promoter'){
+        if(--e.t <= 0) e.t = 120;
+        if(e.t > 30){
+          const dx = hero.x - e.x, dy = hero.y - e.y;
+          if(Math.abs(dx) > Math.abs(dy)){ e.dir = dx > 0 ? 'right' : 'left'; if(moveEnt(e, Math.sign(dx)*sp, 0, true)) moveEnt(e, 0, Math.sign(dy)*sp, true); }
+          else { e.dir = dy > 0 ? 'down' : 'up'; if(moveEnt(e, 0, Math.sign(dy)*sp, true)) moveEnt(e, Math.sign(dx)*sp, 0, true); }
+        }
+      } else if(e.type === 'defect'){
+        if(moveEnt(e, e.vx*sp, 0, true)) e.vx *= -1;
+        if(moveEnt(e, 0, e.vy*sp, true)) e.vy *= -1;
+      } else if(e.type === 'drone'){
+        if(--e.t <= 0){ e.t = 60 + (Math.random()*60|0); if(Math.random() < .5){ e.vx = Math.random() < .5 ? -1 : 1; e.vy = 0; } else { e.vy = Math.random() < .5 ? -1 : 1; e.vx = 0; } }
+        if(moveEnt(e, e.vx*sp, e.vy*sp, true)){ e.vx *= -1; e.vy *= -1; }
+      }
+    }
+    if(e.hp <= 0){
+      poof(e.x + 8, e.y + 8); R.enemies.splice(i, 1);
+      const r = Math.random();
+      if(r < .22) R.items.push({ x:e.x, y:e.y, kind:'H' }); else if(r < .6) R.items.push({ x:e.x, y:e.y, kind:'A' });
+      continue;
+    }
+    if(overlap(heroBox(), entBox(e))) hurtHero(e.x + 8, e.y + 8);
+  }
+}
+
+function shoot(x, y, ang, kind, sp=1.4){ R.proj.push({ x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, kind, life:400 }); }
+function updateBoss(){
+  const b = R.boss; if(!b) return;
+  const d = BOSSES[b.type];
+  if(b.intro > 0){ b.intro--; return; }
+  if(b.inv > 0) b.inv--;
+  b.t++;
+  const cx = b.x + 12, cy = b.y + 12, hx = hero.x + 8, hy = hero.y + 10;
+  if(b.dash > 0){
+    b.dash--; if(moveEnt(b, b.dvx, 0, true) || moveEnt(b, 0, b.dvy, true)) b.dash = 0;
+  } else {
+    if(d.horiz){ b.ty = 4*TS - 8; }
+    const dx = b.tx - b.x, dy = b.ty - b.y;
+    if(Math.hypot(dx, dy) < 2 || b.t % 180 === 0){
+      b.tx = 2*TS + Math.random()*(COLS - 5)*TS;
+      b.ty = d.horiz ? 4*TS - 8 : 2*TS + Math.random()*(ROWS - 5)*TS;
+    }
+    const l = Math.hypot(dx, dy) || 1;
+    const hitT = moveEnt(b, dx/l*d.speed, dy/l*d.speed, true);
+    if(hitT){ b.tx = b.x + (Math.random() - .5)*80; b.ty = b.y + (Math.random() - .5)*60; }
+    if(d.dash && b.t % 160 === 80){ const l2 = Math.hypot(hx - cx, hy - cy) || 1; b.dvx = (hx - cx)/l2*2.6; b.dvy = (hy - cy)/l2*2.6; b.dash = 28; }
+    if(d.teleport && b.t % 220 === 110){
+      poof(cx, cy, '#d8423b');
+      for(let k = 0; k < 20; k++){
+        const nx = 2*TS + Math.random()*(COLS - 5)*TS, ny = 2*TS + Math.random()*(ROWS - 5)*TS;
+        if(!boxHit(nx + b.bx, ny + b.by, b.bw, b.bh, true) && Math.hypot(nx - hero.x, ny - hero.y) > 60){ b.x = nx; b.y = ny; break; }
+      }
+      poof(b.x + 12, b.y + 12, '#d8423b');
+    }
+  }
+  if(b.t % d.every === 0){
+    const ang = Math.atan2(hy - cy, hx - cx);
+    if(d.shot === 'aim1') shoot(cx, cy, ang, d.proj, 1.7);
+    if(d.shot === 'aim3'){ for(const o of [-.3, 0, .3]) shoot(cx, cy, ang + o, d.proj); }
+    if(d.shot === 'ring8'){ for(let k = 0; k < 8; k++) shoot(cx, cy, k * Math.PI/4 + (b.t % 2 ? Math.PI/8 : 0), d.proj, 1.2); }
+    if(b.type === 'monopolist' && b.hp < b.max/2) shoot(cx, cy, ang, 'coin', 1.8);
+  }
+  if(d.summon && --b.summonT <= 0){
+    b.summonT = 300;
+    if(R.enemies.length < 3){ const e = makeEnemy('spam', 2 + (Math.random()*11|0), 2 + (Math.random()*6|0)); if(!boxHit(e.x + e.bx, e.y + e.by, e.bw, e.bh, true)) R.enemies.push(e); }
+  }
+  if(overlap(heroBox(), entBox(b))) hurtHero(cx, cy);
+}
+function updateProj(){
+  for(let i = R.proj.length - 1; i >= 0; i--){
+    const p = R.proj[i]; p.x += p.vx; p.y += p.vy; p.life--;
+    const tx = Math.floor(p.x / TS), ty = Math.floor(p.y / TS);
+    if(p.life <= 0 || tx < 0 || ty < 0 || tx >= COLS || ty >= ROWS || (SOLID.has(R.grid[ty][tx]) && R.grid[ty][tx] !== 'N')){ R.proj.splice(i, 1); continue; }
+    if(overlap(heroBox(), { x:p.x-3, y:p.y-3, w:6, h:6 })){ R.proj.splice(i, 1); hurtHero(p.x, p.y); }
+  }
+}
+
+/* ---------------- переходы ---------------- */
+function startScroll(d){
+  const [c, r] = R.key.split(',').map(Number), [dx, dy] = DV[d];
+  const nk = (c + dx) + ',' + (r + dy);
+  if(!LOCS[R.loc].rooms[nk]){ // на всякий случай — не выпускаем за карту
+    hero.x = Math.max(0, Math.min(W - 16, hero.x)); hero.y = Math.max(-4, Math.min(PH - 16, hero.y)); return;
+  }
+  const next = loadRoom(R.loc, nk);
+  scroll = { d, from:R, to:next, t:0, dur:d === 'e' || d === 'w' ? 48 : 36 };
+  state = 'scroll';
+}
+function entryPos(d){
+  if(d === 'e') return { x:14, y:5*TS - 4 };
+  if(d === 'w') return { x:(COLS - 2)*TS - 2, y:5*TS - 4 };
+  if(d === 'n') return { x:7.5*TS, y:(ROWS - 2)*TS - 6 };
+  return { x:7.5*TS, y:TS - 4 };
+}
+function finishScroll(){
+  const d = scroll.d; R = scroll.to; scroll = null;
+  const p = entryPos(d); hero.x = p.x; hero.y = p.y;
+  hero.cell = null; hero.push = 0;
+  state = 'play';
+  if(R.boss){ showToast(BOSSES[R.boss.type].name + '!'); }
+  else if(R.cfg.hint && !R.st.solved) showToast(R.cfg.hint.toUpperCase());
+}
+function enterCave(){
+  const parent = { loc:R.loc, key:R.key, rx:R.cave.tx*TS, ry:(R.cave.ty + 1)*TS - 4 };
+  fade = { t:0, dur:24, mid:()=>{
+    R = loadCave(R.cave.id, parent);
+    hero.x = 7.5*TS; hero.y = (ROWS - 2)*TS - 4; hero.facing = 'up'; hero.cell = null;
+    caveText = { s:CAVES[R.caveId].text, shown:0 };
+  }};
+  state = 'fade';
+}
+function exitCave(){
+  const p = R.parent;
+  fade = { t:0, dur:24, mid:()=>{
+    R = loadRoom(p.loc, p.key); hero.x = p.rx; hero.y = p.ry; hero.facing = 'down'; hero.cell = null; caveText = null;
+  }};
+  state = 'fade';
+}
+function nextLocation(){
+  SFX.win();
+  if(G.loc + 1 < LOCS.length){ fade = { t:0, dur:30, mid:()=>startLocation(G.loc + 1) }; state = 'fade'; }
+}
+function finishGame(){
+  SFX.win(); state = 'win';
+  const disc = Math.min(30, 5 + Math.floor(G.args / 2));
+  const secs = Math.floor(G.time / 60), mm = Math.floor(secs / 60), ss = String(secs % 60).padStart(2, '0');
+  document.getElementById('winDiscount').textContent = 'СКИДКА ' + disc + '%';
+  document.getElementById('winStats').innerHTML = 'Аргументов для торга: ' + G.args + '<br>Время: ' + mm + ':' + ss + ' · Сорванных переговоров: ' + G.deaths +
+    '<br>Лучший поставщик найден — честная цена, качество и сроки!';
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  showOverlay('win');
+}
+
+/* ---------------- викторина ---------------- */
+let quizCur = null;
+function openQuiz(q){
+  quizCur = q; state = 'quiz';
+  document.getElementById('quizQ').textContent = q.q;
+  const box = document.getElementById('quizOpts'); box.innerHTML = '';
+  q.opts.forEach((o, i)=>{
+    const b = document.createElement('button'); b.className = 'opt'; b.innerHTML = '<b>' + (i + 1) + '.</b>' + o;
+    b.onclick = ()=>answerQuiz(i); box.appendChild(b);
+  });
+  showOverlay('quiz');
+}
+function answerQuiz(i){
+  if(state !== 'quiz' || !quizCur) return;
+  hideOverlays(); state = 'play';
+  if(i === quizCur.a){ solve(); showToast('ВЕРНО! ТУРНИКЕТ ОТКРЫТ'); }
+  else { showToast('НЕВЕРНО! -ПОЛЧАШКИ КОФЕ'); hero.inv = 0; hurtHero(hero.x + 8, hero.y); }
+  quizCur = null;
+}
+
+/* ---------------- оверлеи ---------------- */
+function showOverlay(id){ hideOverlays(); document.getElementById(id).classList.add('show'); }
+function hideOverlays(){ document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('show')); }
+function newGame(cont){
+  audioInit();
+  G = newProgress();
+  let loc = 0;
+  if(cont){ const s = loadCheckpoint(); if(s){ Object.assign(G, { maxHp:s.maxHp, args:s.args, keys:s.keys || 0, hasFolder:s.hasFolder, deaths:s.deaths || 0, time:s.time || 0 }); loc = s.loc; } }
+  hideOverlays(); particles = []; caveText = null; dialog = null;
+  startLocation(loc);
+}
+document.getElementById('btnNew').onclick = ()=>newGame(false);
+document.getElementById('btnCont').onclick = ()=>newGame(true);
+document.getElementById('btnRetry').onclick = ()=>{ hideOverlays(); particles = []; caveText = null; startLocation(G.loc); };
+document.getElementById('btnAgain').onclick = ()=>{ hideOverlays(); state = 'title'; refreshTitle(); showOverlay('title'); };
+function refreshTitle(){ document.getElementById('btnCont').style.display = loadCheckpoint() ? '' : 'none'; }
+refreshTitle();
+
+/* ===================================================================
+   ГЛАВНЫЙ ЦИКЛ
+   =================================================================== */
+function update(){
+  frame++;
+  if(state === 'play'){
+    G.time++;
+    updateHero();
+    if(state !== 'play') return;
+    updateEnemies(); updateBoss(); updateProj();
+    for(const b of R.boxes) if(b.anim > 0) b.anim--;
+    if(!R.st.solved && R.cfg.cond && condMet()) solve();
+    if(caveText && caveText.shown < caveText.s.length && frame % 3 === 0){ caveText.shown++; SFX.text(); }
+  } else if(state === 'dialog'){
+    const line = dialog.lines[dialog.i];
+    if(dialog.shown < line.length){ dialog.shown += 1; if(frame % 3 === 0) SFX.text(); if(hit('act')) dialog.shown = line.length; }
+    else if(hit('act')){
+      dialog.i++; dialog.shown = 0;
+      if(dialog.i >= dialog.lines.length){ const a = dialog.after; dialog = null; state = 'play'; if(a) a(); }
+    }
+  } else if(state === 'scroll'){
+    scroll.t++; if(scroll.t >= scroll.dur) finishScroll();
+  } else if(state === 'fade'){
+    fade.t++; if(fade.t === fade.dur){ fade.mid(); if(state === 'fade') state = 'fadein'; }
+  } else if(state === 'fadein'){
+    fade.t++; if(fade.t >= fade.dur*2){ fade = null; state = 'play'; }
+  } else if(state === 'card'){
+    if(--card.t <= 0 || (card.t < 80 && hit('act'))){ card = null; state = 'play'; if(R.cfg.npc && G.loc > 0) showToast('ПОГОВОРИ С ' + (R.cfg.npc.name === 'ОРГАНИЗАТОР' ? 'ОРГАНИЗАТОРОМ' : R.cfg.npc.name === 'ТЕХНОЛОГ' ? 'ТЕХНОЛОГОМ' : R.cfg.npc.name === 'ЛОГИСТ' ? 'ЛОГИСТОМ' : 'СЕКРЕТАРЁМ')); }
+  }
+  for(let i = particles.length - 1; i >= 0; i--){ const p = particles[i]; p.x += p.vx; p.y += p.vy; if(--p.t <= 0) particles.splice(i, 1); }
+  if(toast && --toast.t <= 0) toast = null;
+  for(const k in pressed) pressed[k] = false;
+}
+
+function drawRoom(room, ox, oy, withEntities){
+  const th = room.theme;
+  ctx.save(); ctx.translate(ox, oy + HUD);
+  for(let ty = 0; ty < ROWS; ty++) for(let tx = 0; tx < COLS; tx++){
+    const x = tx*TS, y = ty*TS, d = doorAt(tx, ty);
+    if(d && room.cfg.doors && room.cfg.doors[d]){ drawDoor(room, d, tx, ty, x, y, th); continue; }
+    const t = room.grid[ty][tx];
+    if(t === 'N' || t === 'X'){ drawFloor(th, x, y, tx, ty); continue; }
+    drawTile(t, x, y, tx, ty, th);
+    if(t === 'G'){ if(!room.st.solved) drawGate(x, y); }
+  }
+  for(const l of room.lights) drawLight(l.tx*TS, l.ty*TS, l.on);
+  for(const b of room.boxes){
+    let bx = b.tx*TS, by = b.ty*TS;
+    if(b.anim > 0){ const k = b.anim / 8; bx = (b.tx + (b.fx - b.tx)*k)*TS; by = (b.ty + (b.fy - b.ty)*k)*TS; }
+    drawBox(bx, by);
+  }
+  for(const it of room.items) drawItem(it.kind, it.x, it.y);
+  for(const n of room.npcs){
+    const look = NPC_LOOK[n.kind] || NPC_LOOK.boss;
+    drawPerson(n.tx*TS, n.ty*TS, Object.assign({ facing:n.facing }, look));
+    if(n.supplier){ const bob = (frame >> 4) % 2; rect(n.tx*TS + 6, n.ty*TS - 7 - bob, 4, 4, '#f2b134'); rect(n.tx*TS + 5, n.ty*TS - 6 - bob, 6, 2, '#f2b134'); }
+  }
+  if(withEntities){
+    for(const e of room.enemies){
+      if(e.spawn > 0){ if((frame >> 2) % 2) { rect(e.x + 4, e.y + 4, 8, 8, '#ffffff'); rect(e.x + 6, e.y + 2, 4, 12, '#ffffff'); } continue; }
+      drawEnemy(e);
+    }
+    if(room.boss) drawBoss(room.boss);
+    for(const p of room.proj) drawProj(p);
+  }
+  ctx.restore();
+}
+function drawDoor(room, d, tx, ty, x, y, th){
+  const s = doorState(room, d);
+  drawFloor(th, x, y, tx, ty);
+  const frameC = th.wallLo;
+  if(s === 'open'){
+    if(d === 'n' || d === 's'){ rect(x, y, 16, 16, th.floor); if(tx === 7) rect(x, y, 2, 16, frameC); else rect(x + 14, y, 2, 16, frameC); }
+    else { rect(x, y, 16, 2, frameC); rect(x, y + 14, 16, 2, frameC); }
+    return;
+  }
+  // закрытая дверь: стеклянная (shut) или с замком-бейджем (lock)
+  drawWall(th, x, y, tx, ty);
+  orect(x + 1, y + 1, 14, 14, s === 'lock' ? '#f2d38a' : '#cfe8ff', INK);
+  rect(x + 3, y + 3, 10, 10, s === 'lock' ? '#e6b955' : '#a9d4ff');
+  if(s === 'lock'){ orect(x + 5, y + 5, 6, 7, '#46525e'); rect(x + 7, y + 7, 2, 2, (frame >> 4) % 2 ? '#d8423b' : '#ff8a80'); }
+  else { rect(x + 4, y + 4, 3, 1, '#ffffff'); rect(x + 4, y + 5, 1, 3, '#ffffff'); }
+}
+function drawHeroSprite(x, y){
+  if(hero.inv > 0 && (frame >> 2) % 2) return;
+  const step = hero.walk ? (hero.walk >> 3) % 2 : 0;
+  const atk = hero.atk > 0;
+  if(atk && hero.facing === 'up') drawFolderSwing(x, y);
+  drawPerson(x, y, Object.assign({ facing:hero.facing, step }, HERO_LOOK, G.hasFolder ? {} : {}));
+  if(atk && hero.facing !== 'up') drawFolderSwing(x, y);
+}
+function drawFolderSwing(x, y){
+  const f = hero.facing;
+  const fc = '#f2b134', dk = '#8a5a0a';
+  if(f === 'right'){ orect(x + 13, y + 7, 12, 6, fc, dk); rect(x + 15, y + 9, 7, 1, '#ffffff'); }
+  if(f === 'left'){ orect(x - 9, y + 7, 12, 6, fc, dk); rect(x - 6, y + 9, 7, 1, '#ffffff'); }
+  if(f === 'up'){ orect(x + 5, y - 9, 6, 12, fc, dk); rect(x + 7, y - 7, 1, 7, '#ffffff'); }
+  if(f === 'down'){ orect(x + 5, y + 13, 6, 12, fc, dk); rect(x + 7, y + 15, 1, 7, '#ffffff'); }
+}
+
+function drawHUD(){
+  rect(0, 0, W, HUD, '#fbfdff'); rect(0, HUD - 2, W, 2, INK);
+  const L = LOCS[G.loc];
+  text(R && R.isCave ? 'АРХИВ' : L.name, 8, 5, '#3b82c4');
+  // мини-карта
+  const keysList = Object.keys(L.rooms).map(k=>k.split(',').map(Number));
+  const maxC = Math.max(...keysList.map(k=>k[0])), maxR = Math.max(...keysList.map(k=>k[1]));
+  const mx = 8, my = 17, cw = 9, chh = 6;
+  rect(mx - 2, my - 2, (maxC + 1)*(cw + 1) + 3, (maxR + 1)*(chh + 1) + 3, '#e7eef6');
+  for(const [c, r] of keysList){
+    const id = G.loc + ':' + c + ',' + r;
+    const cur = R && !R.isCave && R.key === c + ',' + r;
+    if(G.visited[id] || cur) rect(mx + c*(cw + 1), my + r*(chh + 1), cw, chh, cur ? ((frame >> 4) % 2 ? '#2fa36b' : '#7fe0a8') : '#9fb3c8');
+    else rect(mx + c*(cw + 1), my + r*(chh + 1), cw, chh, '#d3dde8');
+  }
+  // предметы
+  const ix = 70;
+  drawItem('K', ix, 16 + ((frame >> 4) % 2)); text('x' + G.keys, ix + 16, 21);
+  drawItem('A', ix, 31 + ((frame >> 4) % 2)); text('x' + G.args, ix + 16, 35);
+  // слот папки
+  orect(116, 14, 22, 28, '#ffffff'); text('A', 124, 6, INK);
+  if(G.hasFolder) drawFolderIcon(119, 21);
+  // кофе
+  text('-КОФЕ-', 150, 6, '#d8423b');
+  const cups = G.maxHp / 2;
+  for(let i = 0; i < cups; i++){
+    const x = 150 + (i % 8)*12, y = 17 + Math.floor(i / 8)*12, v = G.hp - i*2;
+    orect(x, y + 1, 9, 9, '#ffffff');
+    if(v >= 2) rect(x + 1, y + 2, 7, 7, '#7a4a25'); else if(v === 1) rect(x + 1, y + 5, 7, 4, '#7a4a25');
+    rect(x + 9, y + 3, 2, 4, INK);
+  }
+  // босс
+  if(R && R.boss){
+    const b = R.boss, w = 92;
+    text(BOSSES[b.type].name, 150, 30, '#8e44ad');
+    orect(150, 39, w, 6, '#ffffff'); rect(151, 40, Math.max(0, (w - 2) * b.hp / b.max), 4, '#d8423b');
+  }
+}
+
+function drawDialog(){
+  const x = 8, y = HUD + PH - 62, w = W - 16, h = 56;
+  orect(x, y, w, h, '#ffffff'); rect(x + 2, y + 2, w - 4, 1, '#e7eef6');
+  let ty = y + 6;
+  if(dialog.name){ text(dialog.name, x + 6, ty, '#3b82c4'); ty += 12; }
+  const line = dialog.lines[dialog.i].slice(0, dialog.shown);
+  wrap(line, w - 12).slice(0, dialog.name ? 3 : 4).forEach((l, i)=>text(l, x + 6, ty + i*11));
+  if(dialog.shown >= dialog.lines[dialog.i].length && (frame >> 4) % 2) text('▼', x + w - 14, y + h - 12, '#d8423b');
+}
+
+function render(){
+  ctx.fillStyle = '#f6ecd9'; ctx.fillRect(0, 0, W, H);
+  if(state === 'title' || !G){ drawTitleScene(); return; }
+  if(state === 'card'){
+    rect(0, 0, W, H, '#fbfdff');
+    text(card.title, W/2, 84, '#3b82c4', 'center'); text(card.name, W/2, 104, INK, 'center');
+    drawPerson(W/2 - 8, 130, Object.assign({ facing:'down', step:(frame >> 3) % 2 }, HERO_LOOK));
+    return;
+  }
+  drawHUD();
+  if(state === 'scroll'){
+    const k = scroll.t / scroll.dur, d = scroll.d;
+    const dx = d === 'e' ? -W*k : d === 'w' ? W*k : 0, dy = d === 's' ? -PH*k : d === 'n' ? PH*k : 0;
+    ctx.save(); ctx.beginPath(); ctx.rect(0, HUD, W, PH); ctx.clip();
+    drawRoom(scroll.from, dx, dy, false);
+    const ox = d === 'e' ? W : d === 'w' ? -W : 0, oy = d === 's' ? PH : d === 'n' ? -PH : 0;
+    drawRoom(scroll.to, dx + ox, dy + oy, false);
+    const fp = entryPos(d);
+    ctx.translate(0, HUD);
+    drawHeroSprite(dx + ox + fp.x, dy + oy + fp.y);
+    ctx.restore();
+    return;
+  }
+  ctx.save(); ctx.beginPath(); ctx.rect(0, HUD, W, PH); ctx.clip();
+  drawRoom(R, 0, 0, true);
+  ctx.translate(0, HUD);
+  drawHeroSprite(hero.x, hero.y);
+  for(const p of particles) rect(p.x - 1, p.y - 1, 3, 3, p.c === '#ffffff' ? '#9fb3c8' : p.c);
+  ctx.restore();
+  if(caveText && R.isCave){
+    const lines = wrap(caveText.s.slice(0, caveText.shown), W - 32);
+    lines.forEach((l, i)=>text(l, W/2, HUD + 18 + i*12, '#ffffff', 'center'));
+  }
+  if(toast && state === 'play'){
+    const lines = wrap(toast.s, W - 40), h = lines.length*11 + 10, y = HUD + PH - h - 6;
+    orect(14, y, W - 28, h, '#fffbe8');
+    lines.forEach((l, i)=>text(l, W/2, y + 6 + i*11, INK, 'center'));
+  }
+  if(state === 'dialog') drawDialog();
+  if(state === 'fade' || state === 'fadein'){
+    const k = state === 'fade' ? fade.t / fade.dur : 1 - (fade.t - fade.dur) / fade.dur;
+    ctx.fillStyle = 'rgba(251,253,255,' + Math.max(0, Math.min(1, k)) + ')'; ctx.fillRect(0, 0, W, H);
+  }
+}
+
+function drawTitleScene(){
+  const th = THEMES.office;
+  for(let ty = 0; ty < 14; ty++) for(let tx = 0; tx < 16; tx++){
+    const edge = ty === 0 || ty === 13 || tx === 0 || tx === 15;
+    if(edge) drawWall(th, tx*TS, ty*TS, tx, ty); else drawFloor(th, tx*TS, ty*TS, tx, ty);
+  }
+  drawTile('p', 16, 16, 1, 1, th); drawTile('p', 224, 16, 14, 1, th); drawTile('p', 16, 192, 1, 12, th); drawTile('p', 224, 192, 14, 12, th);
+  drawPerson(96, 150, Object.assign({ facing:'right', step:(frame >> 3) % 2 }, HERO_LOOK));
+  drawPerson(144, 150, Object.assign({ facing:'left' }, NPC_LOOK.supplier));
+  rect(150, 143 - ((frame >> 4) % 2), 4, 4, '#f2b134');
+}
+
+let last = performance.now(), acc = 0;
+function loop(now){
+  acc += Math.min(100, now - last); last = now;
+  while(acc >= 1000/60){ update(); acc -= 1000/60; }
+  render();
+  requestAnimationFrame(loop);
+}
+(document.fonts && document.fonts.load ? document.fonts.load(FONT).catch(()=>{}) : Promise.resolve()).finally(()=>requestAnimationFrame(loop));
+
+/* отладка для автотестов: window.__bq */
+window.__bq = { get state(){ return state; }, get R(){ return R; }, get hero(){ return hero; }, get G(){ return G; },
+  goto(loc, key){ G.loc = loc; R = loadRoom(loc, key); hero = makeHero(7, 7); hero.cell = null; state = 'play'; card = null; },
+  give(){ G.hasFolder = true; G.keys += 3; } };
+</script>
+</body>
+</html>
