@@ -85,12 +85,13 @@
 
   <div class="overlay show" id="title">
     <h1>КВЕСТ БАЙЕРА<br><span>В ПОИСКАХ ПОСТАВЩИКА</span></h1>
-    <p>Лучшего поставщика запер в эксклюзивном контракте злой МОНОПОЛИСТ. Пройди офис, выставку, фабрику и порт, реши головоломки, победи боссов и подпиши честный контракт!</p>
+    <p>Нам срочно нужен лучший поставщик, а его запер в эксклюзивном контракте злой МОНОПОЛИСТ. Возьми посох у Вероники, пройди офис, выставку, фабрику и порт, отбейся от торгующихся поставщиков и подпиши честный контракт!</p>
     <div class="row">
-      <button class="btn" id="btnNew">НОВАЯ ИГРА</button>
+      <button class="btn" id="btnNew">ИГРАТЬ ЗА ПАРНЯ</button>
+      <button class="btn" id="btnNewGirl">ИГРАТЬ ЗА ДЕВУШКУ</button>
       <button class="btn alt" id="btnCont" style="display:none">ПРОДОЛЖИТЬ</button>
     </div>
-    <div class="keys">СТРЕЛКИ / WASD — ИДТИ · ПРОБЕЛ — ПАПКА / ГОВОРИТЬ<br>НА ТЕЛЕФОНЕ — КНОПКИ ПОД ЭКРАНОМ</div>
+    <div class="keys">СТРЕЛКИ / WASD — ИДТИ · ПРОБЕЛ — ПОСОХ / ГОВОРИТЬ<br>НА ТЕЛЕФОНЕ — КНОПКИ ПОД ЭКРАНОМ</div>
   </div>
 
   <div class="overlay" id="dead">
@@ -153,11 +154,12 @@ const THEMES = {
    Q терминал-викторина   L плитка-свет   > < ^ v конвейер   N персонаж   X поставщик
    G турникет (откроется после решения)   E враг   M босс   Z скрытый лифт   O тёмный проход
    F огонь (в архиве)   Y предмет в архиве                                            */
-const SOLID = new Set(['#','d','p','c','s','x','m','N','Q','X','F']);
+const SOLID = new Set(['#','d','p','c','s','x','m','N','Q','X','F','t','r','k','|']);
 const CONVEY = { '>':[1,0], '<':[-1,0], '^':[0,-1], 'v':[0,1] };
 
 const ENEMY = {
   spam:     { hp:1, speed:.55, name:'спам' },
+  haggler:  { hp:2, speed:.45, name:'поставщик' },
   promoter: { hp:2, speed:.42, name:'промоутер' },
   defect:   { hp:2, speed:.7,  name:'брак' },
   drone:    { hp:2, speed:.8,  name:'дрон' }
@@ -170,8 +172,26 @@ const BOSSES = {
   monopolist: { name:'МОНОПОЛИСТ',        hp:16, speed:.5,  every:105, shot:'ring8', proj:'coin',  summon:true }
 };
 
+const BUSY_LINES = [
+  'Не сейчас, я занят — созвон через минуту.',
+  'Сверяю спецификации, не отвлекай.',
+  'Слушай, пойдём покурим?',
+  'Я в отчётах по горло. Может, перекур?',
+  'Занята! Дедлайн по ТЗ горит.',
+  'Пять минут на перекур? Нет? Ну ладно...',
+  'Мне ещё 40 артикулов завести. Позже!',
+  'Ой, давай потом. Или покурим?'
+];
+const DESIGNER_LINES = [
+  'Не мешай, я подкалываю подол.',
+  'Примеряю новую коллекцию. Занята!',
+  'Как сидит? Хотя неважно, я занята. Пойдём курить?',
+  'Тут посадку править и править... Позже!'
+];
+const HAGGLE_LINES = ['$3 ЗА ФУТБОЛКУ!', 'ДОРОГОЙ, Я НЕ МОГУ ТАКОЕ СДЕЛАТЬ!', 'ЭТО ТЯЖЕЛО ДЛЯ НАС!', 'ЛУЧШАЯ ЦЕНА, ДРУГ!', '$5 — ПОСЛЕДНЯЯ ЦЕНА!', 'MOQ 10 000 ШТ!', 'ТКАНЬ ПОДОРОЖАЛА!', '+15% ЗА СРОЧНОСТЬ!'];
 const CAVES = {
-  archive: { text:'ОДНОМУ НА ПЕРЕГОВОРЫ ИДТИ ОПАСНО! ВОЗЬМИ ЭТО.', npc:'elder', item:'folder', got:'ПАПКА С КП! ПРОБЕЛ — УДАР АРГУМЕНТОМ.' },
+  archive: { text:'ВЕРОНИКА: ДЕРЖИ ПОСОХ! ДАВАЙ, ИДИ К ПОСТАВЩИКАМ И НАЙДИ САМОГО ЛУЧШЕГО.', npc:'veronika', name:'ВЕРОНИКА', item:'staff', leaves:true,
+             got:'ПОСОХ GJ! ПРОБЕЛ — УДАР. ВЕРОНИКА: А Я ПОЙДУ ПОКУРЮ.', gone:'ВЕРОНИКА УШЛА НА ПЕРЕКУР.' },
   secret:  { text:'ЭТО СЕКРЕТ ДЛЯ ВСЕХ: ПРАЙС КОНКУРЕНТА!', npc:'merch', item:'args10', got:'+10 АРГУМЕНТОВ ДЛЯ ТОРГА!' },
   thermos: { text:'НА ТАМОЖНЕ ДОЛГИЕ ОЧЕРЕДИ. ВОЗЬМИ ТЕРМОС.', npc:'elder', item:'thermos', got:'ТЕРМОС: +1 ЧАШКА КОФЕ К ЗАПАСУ!' }
 };
@@ -191,22 +211,34 @@ const CAVE_MAP = [
 
 /* ---------------- локации и комнаты ---------------- */
 const LOCS = [
-  { name:'ОФИС ЗАКУПОК', theme:'office', start:'0,1', startTile:[7,7], rooms:{
-    '0,1': { doors:{ e:'shut' }, cond:'item', cave:'archive',
-      npc:{ kind:'boss', name:'РУКОВОДИТЕЛЬ', lines:['Квартал горит! Нам нужен лучший поставщик.','Его держит в эксклюзивном контракте МОНОПОЛИСТ.','Без папки с КП к поставщикам не ходят. Загляни в архив — тёмный проход наверху.'] },
+  { name:'ОФИС ЗАКУПОК', theme:'office', start:'0,1', startTile:[8,9], rooms:{
+    '0,1': { doors:{ e:'shut' }, cond:'item', cave:'archive', npcs:[
+        { at:[7,1], kind:'lead', name:'МЕНЕДЖЕР', seated:true, quest:true,
+          lines:['О, ты пришёл! Слушай внимательно.','Нам срочно нужен лучший поставщик. Иди и найди его, а не то нам хана!','Только без посоха к поставщикам не суйся — загляни в архив, тёмный проход наверху слева. Там Вероника.'] },
+        { at:[8,1], kind:'colleague', name:'КОЛЛЕГА', seated:true,
+          lines:['Я занята, у меня сверка остатков.','Но если пойдёшь на перекур — зови меня.'] },
+        { at:[4,3], kind:'designer', name:'ДИЗАЙНЕР', busy:true },
+        { at:[4,8], kind:'designer2', name:'ДИЗАЙНЕР', busy:true },
+        { at:[3,5], kind:'emp1', seated:true, busy:true }, { at:[4,5], kind:'emp2', seated:true, busy:true },
+        { at:[5,5], kind:'emp3', seated:true, busy:true }, { at:[6,5], kind:'emp4', seated:true, busy:true },
+        { at:[7,5], kind:'emp5', seated:true, busy:true }, { at:[8,5], kind:'emp6', seated:true, busy:true },
+        { at:[3,7], kind:'emp4', seated:true, busy:true, facing:'up' }, { at:[4,7], kind:'emp5', seated:true, busy:true, facing:'up' },
+        { at:[5,7], kind:'emp1', seated:true, busy:true, facing:'up' }, { at:[6,7], kind:'emp6', seated:true, busy:true, facing:'up' },
+        { at:[7,7], kind:'emp2', seated:true, busy:true, facing:'up' }, { at:[8,7], kind:'emp3', seated:true, busy:true, facing:'up' }
+      ],
       map:[
       '###O############',
-      '#pp...dddd...pp#',
-      '#..............#',
-      '#..d........d..#',
-      '#..d...N....d..#',
-      '#..............#',
-      '#..d........d..#',
-      '#..d........d..#',
-      '#..............#',
-      '#pp..........pp#',
+      '|......NN...rrr#',
+      '|.....tttt..rrr#',
+      '|.k.N.......rrr#',
+      '|...........rrr#',
+      '|..NNNNNN......#',
+      '|.tttttttt..rrr#',
+      '|..NNNNNN...rrr#',
+      '|.k.N.......rrr#',
+      '|.....k.....rrr#',
       '################']},
-    '1,1': { doors:{ w:'shut', e:'shut', n:'shut' }, cond:'enemies', enemy:'spam', map:[
+    '1,1': { doors:{ w:'shut', e:'shut', n:'shut' }, cond:'enemies', enemy:'haggler', hint:'Поставщики торгуются! Отбейся аргументами.', map:[
       '################',
       '#..............#',
       '#.dd..dd..dd...#',
@@ -245,13 +277,13 @@ const LOCS = [
     '2,0': { doors:{ w:'lock' }, cond:'boss', boss:'bureaucrat', map:[
       '################',
       '#............Z.#',
-      '#.p..........p.#',
+      '#.k..........k.#',
       '#..............#',
       '#..............#',
       '#......M.......#',
       '#..............#',
       '#..............#',
-      '#.p..........p.#',
+      '#.rr........rr.#',
       '#..............#',
       '################']}
   }},
@@ -517,7 +549,7 @@ function roomState(loc, key){
 /* ---------------- сохранение (только удобство) ---------------- */
 const SAVE_KEY = 'buyer-quest-v1';
 function saveCheckpoint(){
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify({ loc:G.loc, maxHp:G.maxHp, args:G.args, keys:G.keys, hasFolder:G.hasFolder, deaths:G.deaths, time:G.time })); }catch(e){}
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify({ heroType:G.heroType, loc:G.loc, maxHp:G.maxHp, args:G.args, keys:G.keys, hasFolder:G.hasFolder, deaths:G.deaths, time:G.time })); }catch(e){}
 }
 function loadCheckpoint(){
   try{ const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return s && typeof s.loc === 'number' ? s : null; }catch(e){ return null; }
@@ -622,6 +654,12 @@ function drawWall(th, x, y, tx, ty){
 }
 function drawTile(t, x, y, tx, ty, th){
   if(t === '#'){ drawWall(th, x, y, tx, ty); return; }
+  if(t === '|'){ // стена с окном
+    drawWall(th, x, y, tx, ty);
+    orect(x+2, y+1, 12, 14, '#bfe3ff', '#5a6b7c'); rect(x+7, y+2, 2, 12, '#5a6b7c'); rect(x+3, y+7, 10, 1, '#5a6b7c');
+    rect(x+3, y+2, 2, 2, '#ffffff'); rect(x+4, y+4, 1, 2, '#ffffff'); rect(x+10, y+9, 2, 2, '#e6f5ff');
+    rect(x+13, y+1, 2, 14, '#9fb3c8'); return;
+  }
   drawFloor(th, x, y, tx, ty);
   switch(t){
     case 'd': // стол с монитором
@@ -644,6 +682,32 @@ function drawTile(t, x, y, tx, ty, th){
     case 'm': // станок
       orect(x+1, y+2, 14, 14, '#9aa7b4', '#46525e'); for(let i = 0; i < 14; i += 4) rect(x+1+i, y+2, 2, 2, '#f2b705');
       orect(x+4, y+6, 8, 6, '#dfe6ec', '#46525e'); rect(x+7, y+7, 1, 4, '#d8423b'); rect(x+3, y+13, 10, 1, '#46525e'); break;
+    case 't': { // длинный стол
+      const g = (tx2, ty2)=>curGrid && curGrid[ty2] && curGrid[ty2][tx2] === 't';
+      const L = g(tx-1, ty), Rr = g(tx+1, ty);
+      rect(x + (L ? 0 : 1), y+3, 16 - (L ? 0 : 1) - (Rr ? 0 : 1), 10, '#7a5531');
+      rect(x + (L ? 0 : 2), y+4, 16 - (L ? 0 : 2) - (Rr ? 0 : 2), 7, '#e2bb86');
+      rect(x + (L ? 0 : 2), y+11, 16 - (L ? 0 : 2) - (Rr ? 0 : 2), 1, '#c99a63');
+      const h = hash(tx, ty) % 4;
+      if(h === 0){ orect(x+4, y+5, 8, 5, '#c3ccd6', '#46525e'); rect(x+5, y+6, 6, 3, '#9fd3ff'); }
+      else if(h === 1){ rect(x+3, y+5, 6, 5, '#ffffff'); rect(x+4, y+6, 4, 1, '#9aa7b4'); rect(x+10, y+6, 3, 3, '#ffffff'); rect(x+10, y+6, 3, 1, '#7a4a25'); }
+      else if(h === 2){ orect(x+5, y+5, 7, 5, '#3b3f4a'); rect(x+6, y+6, 5, 2, '#9fd3ff'); }
+      else { rect(x+3, y+6, 9, 3, '#f7c6d9'); rect(x+4, y+7, 7, 1, '#ffffff'); }
+      break; }
+    case 'r': { // рейл с вещами
+      const cols = ['#e05a4f','#3b82c4','#2fa36b','#f2a33a','#9b59b6','#1d2b3a','#f7c6d9','#ffffff','#7fb3d5','#c0392b','#f4d03f'];
+      rect(x, y+2, 16, 1, '#5a6b7c'); rect(x, y+14, 16, 1, '#9aa7b4');
+      for(let i = 0; i < 4; i++){
+        const c = cols[hash(tx*4 + i, ty) % cols.length], gx = x + i*4, len = 7 + (hash(i, tx + ty) % 4);
+        rect(gx+1, y+2, 1, 2, '#46525e'); rect(gx, y+4, 4, len, INK); rect(gx, y+4, 3, len - 1, c);
+      }
+      rect(x, y+2, 1, 13, '#5a6b7c'); break; }
+    case 'k': { // манекен на стойке
+      rect(x+7, y+11, 2, 4, '#5a6b7c'); rect(x+4, y+14, 8, 2, '#5a6b7c');
+      rect(x+4, y+2, 8, 10, INK); rect(x+5, y+3, 6, 8, '#f0d9b5'); rect(x+7, y, 2, 3, '#5a6b7c');
+      const c = ['#e05a4f','#3b82c4','#2fa36b','#9b59b6'][hash(tx, ty) % 4];
+      rect(x+5, y+5, 6, 6, c); rect(x+6, y+4, 4, 1, c); rect(x+9, y+6, 1, 1, '#ffffff'); rect(x+6, y+8, 1, 1, '#ffffff');
+      break; }
     case 'B': break;
     case 'o': // метка
       for(let i = 0; i < 14; i += 4){ rect(x+1+i, y+1, 2, 1, th.accent); rect(x+1+i, y+14, 2, 1, th.accent); rect(x+1, y+1+i, 1, 2, th.accent); rect(x+14, y+1+i, 1, 2, th.accent); }
@@ -707,13 +771,24 @@ function drawItem(kind, x, y){
   } else if(kind === 'C'){ // большая чашка — +1 к запасу
     orect(x+2, y+3, 12, 12, '#ffffff'); rect(x+3, y+4, 10, 3, '#7a4a25'); rect(x+14, y+6, 2, 6, INK);
     rect(x+5, y+9, 6, 4, '#d8423b'); rect(x+7, y+8, 2, 6, '#d8423b');
-  } else if(kind === 'folder' || kind === 'Y'){
-    drawFolderIcon(x, y + 2);
+  } else if(kind === 'staff' || kind === 'folder' || kind === 'Y'){
+    drawStaffIcon(x, y);
   } else if(kind === 'args10'){
     orect(x+2, y+2, 12, 13, '#ffffff'); for(let i = 0; i < 4; i++) rect(x+4, y+5 + i*2, 8, 1, '#5b6b7d'); rect(x+9, y+11, 4, 3, '#d8423b');
   } else if(kind === 'thermos'){
     orect(x+5, y+1, 6, 15, '#d8423b'); rect(x+6, y+5, 4, 6, '#ffffff'); rect(x+5, y+1, 6, 2, INK);
   }
+}
+function drawGJ(cx, cy){ // круглая эмблема с буквами GJ
+  const B = '#1d4e89';
+  rect(cx-3, cy-4, 7, 9, INK); rect(cx-4, cy-3, 9, 7, INK);
+  rect(cx-2, cy-3, 5, 7, '#ffffff'); rect(cx-3, cy-2, 7, 5, '#ffffff');
+  rect(cx-3, cy-2, 3, 1, B); rect(cx-3, cy-2, 1, 5, B); rect(cx-3, cy+2, 3, 1, B); rect(cx-1, cy, 1, 3, B); rect(cx-2, cy, 1, 1, B);
+  rect(cx+1, cy-2, 3, 1, B); rect(cx+2, cy-2, 1, 5, B); rect(cx+1, cy+2, 2, 1, B); rect(cx+1, cy+1, 1, 1, B);
+}
+function drawStaffIcon(x, y){
+  rect(x+7, y+5, 2, 11, '#7a4a25'); rect(x+7, y+5, 1, 11, '#a06a3a');
+  rect(x+6, y+14, 4, 1, '#f2b134'); drawGJ(x+8, y+4);
 }
 function drawFolderIcon(x, y){
   orect(x+1, y+3, 14, 10, '#f2b134', '#8a5a0a'); rect(x+2, y+2, 6, 2, '#f2b134'); rect(x+1, y+1, 8, 1, '#8a5a0a');
@@ -723,22 +798,45 @@ function drawFolderIcon(x, y){
 /* персонажи */
 function drawPerson(x, y, o){
   x = Math.round(x); y = Math.round(y);
-  const f = o.facing || 'down', step = o.step || 0;
-  rect(x+3, y+14, 10, 2, 'rgba(29,43,58,.15)');
-  // ноги
-  const ll = step ? 3 : 4, rl = step ? 4 : 3;
-  rect(x+4, y+11, 3, ll, o.pants); rect(x+9, y+11, 3, rl, o.pants);
-  rect(x+4, y+11+ll-1, 3, 1, INK); rect(x+9, y+11+rl-1, 3, 1, INK);
+  const f = o.facing || 'down', step = o.step || 0, wd = o.wide ? 1 : 0;
+  const seated = !!o.seated;
+  if(seated) y += f === 'up' ? -2 : 4;
+  if(!seated){
+    rect(x+3, y+14, 10, 2, 'rgba(29,43,58,.15)');
+    // ноги и обувь
+    const ll = step ? 3 : 4, rl = step ? 4 : 3, shoe = o.shoes || INK;
+    rect(x+4-wd, y+11, 3+wd, ll, o.pants); rect(x+9, y+11, 3+wd, rl, o.pants);
+    rect(x+4-wd, y+11+ll-1, 3+wd, 1, shoe); rect(x+9, y+11+rl-1, 3+wd, 1, shoe);
+    if(o.shoes) { rect(x+3-wd, y+11+ll-1, 1, 1, INK); rect(x+12+wd, y+11+rl-1, 1, 1, INK); }
+  } else if(f === 'up'){
+    orect(x+3, y+11, 10, 4, '#7d8a98'); // спинка стула
+  }
+  // длинные волосы сзади
+  const hair = o.hair || '#5a3b26';
+  if(o.longHair && f !== 'up'){ rect(x+3, y+2, 10, 8, INK); rect(x+4, y+3, 8, 7, hair); }
+  if(o.longHair && f === 'up'){ rect(x+4, y+1, 8, 10, INK); rect(x+5, y+2, 6, 9, hair); }
   // тело
-  rect(x+3, y+6, 10, 6, INK); rect(x+4, y+7, 8, 4, o.shirt);
-  if(o.jacket){ rect(x+4, y+7, 2, 4, o.jacket); rect(x+10, y+7, 2, 4, o.jacket); }
+  rect(x+3-wd, y+6, 10+wd*2, 6, INK); rect(x+4-wd, y+7, 8+wd*2, 4, o.shirt);
+  if(o.jacket){ rect(x+4-wd, y+7, 2, 4, o.jacket); rect(x+10+wd, y+7, 2, 4, o.jacket); }
   if(o.tie && f === 'down') rect(x+7, y+7, 2, 4, o.tie);
+  if(o.hood){
+    if(f === 'down'){ rect(x+6, y+7, 1, 3, '#ffffff'); rect(x+9, y+7, 1, 3, '#ffffff'); rect(x+5, y+10, 6, 1, o.hood); }
+    if(f === 'up'){ rect(x+5, y+6, 6, 3, o.hood); rect(x+5, y+6, 6, 1, INK); }
+  }
+  if(o.chain && f !== 'up'){ rect(x+5, y+7, 1, 2, '#e9edf1'); rect(x+6, y+9, 4, 1, '#e9edf1'); rect(x+10, y+7, 1, 2, '#e9edf1'); rect(x+7, y+10, 2, 1, '#c0c7cf'); }
+  if(o.tote && !seated){
+    const bx = (f === 'left' || f === 'up') ? x : x + 12;
+    rect(bx, y+8, 4, 6, INK); rect(bx+1, y+9, 2, 4, o.tote); rect(bx+1, y+6, 2, 2, INK);
+  }
   // голова
   rect(x+4, y, 8, 7, INK); rect(x+5, y+1, 6, 5, o.skin || '#f3c9a1');
-  const hair = o.hair || '#5a3b26';
   if(f === 'up') rect(x+5, y+1, 6, 5, hair);
   else {
     rect(x+5, y+1, 6, 2, hair);
+    if(o.bangs) rect(x+5, y+3, 6, 1, hair);
+    if(o.streak){ rect(x+5, y+1, 2, 2, o.streak); rect(x+4, y+3, 1, 5, o.streak); }
+    if(o.longHair){ rect(x+4, y+3, 1, 4, hair); rect(x+11, y+3, 1, 4, hair); }
+    if(o.messy){ rect(x+4, y, 2, 1, hair); rect(x+9, y-1, 2, 2, hair); rect(x+7, y, 1, 1, hair); }
     if(f === 'left') rect(x+9, y+1, 2, 4, hair);
     if(f === 'right') rect(x+5, y+1, 2, 4, hair);
     if(f === 'down'){ rect(x+6, y+4, 1, 1, INK); rect(x+9, y+4, 1, 1, INK); }
@@ -747,6 +845,10 @@ function drawPerson(x, y, o){
   }
   if(o.beard && f !== 'up'){ rect(x+5, y+4, 6, 3, o.beard); rect(x+6, y+7, 4, 2, o.beard); }
   if(o.glasses && f === 'down'){ rect(x+5, y+3, 6, 1, INK); }
+  if(o.glassesBold && f !== 'up'){
+    if(f === 'down'){ rect(x+5, y+3, 6, 1, '#111'); rect(x+6, y+5, 1, 1, '#111'); rect(x+9, y+5, 1, 1, '#111'); rect(x+6, y+4, 1, 1, INK); rect(x+9, y+4, 1, 1, INK); rect(x+7, y+4, 2, 1, o.skin || '#f3c9a1'); }
+    else { const gx = f === 'left' ? x+5 : x+8; rect(gx, y+3, 3, 1, '#111'); rect(gx+1, y+5, 1, 1, '#111'); }
+  }
   if(o.cap){ rect(x+4, y, 8, 2, o.cap); if(f === 'down') rect(x+4, y+2, 9, 1, o.cap); }
   if(o.bag){
     const bx = (f === 'left' || f === 'up') ? x : x + 12;
@@ -756,6 +858,17 @@ function drawPerson(x, y, o){
 const NPC_LOOK = {
   boss:      { shirt:'#ffffff', jacket:'#34495e', pants:'#34495e', tie:'#3b82c4', hair:'#8a8f98' },
   elder:     { shirt:'#b03a2e', jacket:'#b03a2e', pants:'#7b241c', hair:'#e9edf1', beard:'#ffffff' },
+  veronika:  { shirt:'#1d1d1d', pants:'#2b2b33', hair:'#0d0d12', longHair:true, glassesBold:true, chain:true, shoes:'#ffffff', skin:'#f6d7c3', streak:'#ff5fa2' },
+  lead:      { shirt:'#ffffff', jacket:'#d9c6f2', pants:'#2f4a7a', hair:'#f3d98b', longHair:true, glassesBold:true },
+  colleague: { shirt:'#a05ea8', pants:'#4a2c55', hair:'#7a4a25', wide:true, skin:'#efc29d' },
+  emp1:      { shirt:'#cfe3ff', pants:'#2f4a7a', hair:'#2b1a10', messy:true },
+  emp2:      { shirt:'#ffd6e0', pants:'#3d3d4a', hair:'#c47a3a', longHair:true },
+  emp3:      { shirt:'#e8f7ee', pants:'#1e6f48', hair:'#5a3b26', glasses:true },
+  emp4:      { shirt:'#fff1c1', pants:'#5b4a2a', hair:'#1d1d1d', longHair:true, bangs:true },
+  emp5:      { shirt:'#d7f0f7', pants:'#34495e', hair:'#8a5a2a', hood:'#9fd3ff' },
+  emp6:      { shirt:'#f2e0d0', pants:'#4a3a2a', hair:'#3a2418', longHair:true, glasses:true },
+  designer:  { shirt:'#1d1d1d', pants:'#1d1d1d', hair:'#c0392b', longHair:true, glasses:true, shoes:'#ffffff' },
+  designer2: { shirt:'#f7f1e6', pants:'#3d4a57', hair:'#2b1a10', messy:true, shoes:'#ffffff' },
   merch:     { shirt:'#2fa36b', pants:'#1e6f48', hair:'#2b1a10', cap:'#2fa36b' },
   host:      { shirt:'#e0603a', pants:'#5b2a1a', hair:'#2b1a10' },
   tech:      { shirt:'#f2b705', pants:'#3d4a57', hair:'#5a3b26', cap:'#ffffff' },
@@ -763,7 +876,11 @@ const NPC_LOOK = {
   secretary: { shirt:'#f7c6d9', pants:'#5b2a4a', hair:'#3a2418', glasses:true },
   supplier:  { shirt:'#e8f7ee', jacket:'#2fa36b', pants:'#1e6f48', tie:'#f2b134', hair:'#6b3e1f' }
 };
-const HERO_LOOK = { shirt:'#d8e8ff', pants:'#2f4a7a', tie:'#d8423b', hair:'#5a3b26', bag:'#9a5a2a' };
+const HERO_LOOKS = {
+  boy:  { shirt:'#9fd3ff', hood:'#6fb6ec', pants:'#4a6fa5', hair:'#3a2418', messy:true, shoes:'#ffffff', tote:'#f2e6cf' },
+  girl: { shirt:'#ffc9de', hood:'#f59ac0', pants:'#4a6fa5', hair:'#6b3e1f', longHair:true, shoes:'#ffffff', tote:'#f2e6cf' }
+};
+function heroLook(){ return HERO_LOOKS[(G && G.heroType) || 'boy']; }
 
 function drawEnemy(e){
   const x = Math.round(e.x), y = Math.round(e.y), a = (frame >> 3) % 2;
@@ -776,6 +893,9 @@ function drawEnemy(e){
     rect(x+5, yy+9, 2, 2, '#d8423b'); rect(x+9, yy+9, 2, 2, '#d8423b');
     rect(x, yy+(a ? 3 : 6), 2, 4, '#9fd3ff'); rect(x+14, yy+(a ? 3 : 6), 2, 4, '#9fd3ff');
     rect(x+6, yy+1, 4, 3, '#d8423b'); text('@', x+5, yy-6, '#d8423b');
+  } else if(e.type === 'haggler'){
+    drawPerson(x, y, { facing:e.dir, step:a, shirt:'#f4f1ea', jacket:'#8a6a44', pants:'#4a3a2a', hair:'#1d1d1d', shoes:'#5a3b26' });
+    orect(x+(e.dir === 'left' ? -3 : 12), y+7, 6, 7, '#46525e'); rect(x+(e.dir === 'left' ? -2 : 13), y+8, 4, 2, '#9fd3ff'); rect(x+(e.dir === 'left' ? -2 : 13), y+11, 4, 1, '#f2b134');
   } else if(e.type === 'promoter'){
     drawPerson(x, y, { facing:e.dir, step:a, shirt:'#ff6b6b', pants:'#6b2f2f', hair:'#2b1a10', cap:'#ffd43b' });
     orect(x+(e.dir === 'left' ? -2 : 12), y+5, 6, 7, '#ffffff'); rect(x+(e.dir === 'left' ? -1 : 13), y+7, 4, 1, '#ff6b6b');
@@ -825,6 +945,13 @@ function drawBoss(b){
       rect(x+6, y-6, 12, 7, '#1d1d1d'); rect(x+3, y, 18, 2, '#1d1d1d'); rect(x+6, y-2, 12, 1, '#d8423b');
       if(a) text('$', x+20, y+2, '#2fa36b'); break;
   }
+}
+function drawBubble(cx, by, s){
+  const lines = wrap(s, 112), w = Math.max(...lines.map(l=>{ ctx.font = FONT; return ctx.measureText(l).width; })) + 8, h = lines.length*10 + 5;
+  let x = Math.round(cx - w/2); x = Math.max(1, Math.min(W - w - 1, x));
+  let y = Math.round(by - h - 3); if(y < 1) y = by + 22;
+  orect(x, y, w, h, '#ffffff'); rect(Math.round(cx) - 1, y + h - 1, 3, 3, INK); rect(Math.round(cx), y + h - 1, 1, 2, '#ffffff');
+  lines.forEach((l, i)=>text(l, x + 4, y + 3 + i*10, '#d8423b'));
 }
 function drawProj(p){
   const x = Math.round(p.x), y = Math.round(p.y);
@@ -883,7 +1010,10 @@ function loadRoom(loc, key){
         t = '.';
       }
       else if(t === 'Z'){ room.hiddenLift = { tx, ty }; t = st.solved ? 'S' : '.'; }
-      else if(t === 'N'){ room.npcs.push({ tx, ty, kind:cfg.npc.kind, name:cfg.npc.name, lines:cfg.npc.lines, facing:'down' }); }
+      else if(t === 'N'){
+        const c = cfg.npcs ? cfg.npcs.find(n=>n.at[0] === tx && n.at[1] === ty) : cfg.npc;
+        if(c) room.npcs.push({ tx, ty, kind:c.kind, name:c.name || 'СОТРУДНИК', lines:c.lines, busy:c.busy, seated:c.seated, facing:c.facing || 'down', baseFacing:c.facing || 'down' });
+      }
       else if(t === 'X'){ room.npcs.push({ tx, ty, kind:'supplier', name:'ПОСТАВЩИК', lines:cfg.supplier.lines, supplier:true, facing:'down' }); }
       else if(t === 'Q'){ room.quizTile = { tx, ty }; }
       else if(t === 'O'){ room.cave = { tx, ty, id:cfg.cave }; }
@@ -904,7 +1034,7 @@ function loadCave(id, parent){
                  grid:CAVE_MAP.map(r=>r.split('')), boxes:[], pads:[], lights:[], items:[], enemies:[], npcs:[], boss:null, proj:[], isCave:true,
                  caveId:id, parent };
   room.grid.forEach((row, ty)=>row.forEach((t, tx)=>{
-    if(t === 'N'){ room.npcs.push({ tx, ty, kind:c.npc, name:'', lines:[c.text], facing:'down' }); }
+    if(t === 'N'){ if(!(c.leaves && G.caves[id])) room.npcs.push({ tx, ty, kind:c.npc, name:c.name || '', lines:[c.text], facing:'down' }); row[tx] = c.leaves && G.caves[id] ? '.' : 'N'; }
     if(t === 'Y'){ if(!G.caves[id]) room.items.push({ x:tx*TS, y:ty*TS, kind:c.item, cave:id }); row[tx] = '.'; }
   }));
   return room;
@@ -1008,10 +1138,12 @@ function frontPoint(dist=12){
   return { x:hero.x + 8 + dx*dist, y:hero.y + 10 + dy*dist };
 }
 function tryInteract(){
-  const p = frontPoint(12), tx = Math.floor(p.x / TS), ty = Math.floor(p.y / TS);
+  const p = frontPoint(12); let tx = Math.floor(p.x / TS), ty = Math.floor(p.y / TS);
+  if(R.grid[ty] && R.grid[ty][tx] === 't'){ const q = frontPoint(28); tx = Math.floor(q.x / TS); ty = Math.floor(q.y / TS); }
   for(const n of R.npcs){
     if(n.tx === tx && n.ty === ty){
-      n.facing = { up:'down', down:'up', left:'right', right:'left' }[hero.facing];
+      if(!n.seated) n.facing = { up:'down', down:'up', left:'right', right:'left' }[hero.facing];
+      if(n.busy){ const pool = n.kind.startsWith('designer') ? DESIGNER_LINES : BUSY_LINES; say(n.name, [pool[Math.random()*pool.length|0]]); return true; }
       if(n.supplier){ say('ПОСТАВЩИК', n.lines, ()=>{ finishGame(); }); }
       else if(R.isCave){ say('', n.lines); }
       else say(n.name, n.lines);
@@ -1044,7 +1176,7 @@ function updateHero(){
 
   if(hit('act')){
     if(!tryInteract() && G.hasFolder && h.cd === 0){ h.atk = 14; h.cd = 20; SFX.swing(); }
-    else if(!G.hasFolder && !R.isCave && !R.npcs.length) showToast('НУЖНА ПАПКА С КП');
+    else if(!G.hasFolder && !R.isCave && !R.npcs.length) showToast('НУЖЕН ПОСОХ — ОН В АРХИВЕ');
   }
   if(h.atk > 0) h.atk--;
 
@@ -1121,7 +1253,7 @@ function onBump(t, v){
     return;
   }
   if(d && R.cfg.doors && R.cfg.doors[d] && doorState(R, d) === 'shut'){
-    if(!h.lockMsg || frame - h.lockMsg > 120){ h.lockMsg = frame; showToast(R.cfg.cond === 'item' ? 'СНАЧАЛА ВОЗЬМИ ПАПКУ С КП' : 'ДВЕРЬ ЗАКРЫТА'); }
+    if(!h.lockMsg || frame - h.lockMsg > 120){ h.lockMsg = frame; showToast(R.cfg.cond === 'item' ? 'СНАЧАЛА ВОЗЬМИ ПОСОХ В АРХИВЕ' : 'ДВЕРЬ ЗАКРЫТА'); }
     return;
   }
   // толкаем коробку
@@ -1160,7 +1292,8 @@ function pickItem(it, i){
   else if(it.kind === 'C'){ G.maxHp = Math.min(16, G.maxHp + 2); G.hp = G.maxHp; SFX.key(); showToast('+1 ЧАШКА К ЗАПАСУ КОФЕ'); }
   else if(it.cave){
     G.caves[it.cave] = true; const c = CAVES[it.cave];
-    if(it.kind === 'folder') G.hasFolder = true;
+    if(it.kind === 'staff' || it.kind === 'folder') G.hasFolder = true;
+    if(c.leaves){ const n = R.npcs.findIndex(n=>n.kind === c.npc); if(n >= 0){ const nn = R.npcs[n]; poof(nn.tx*TS + 8, nn.ty*TS + 8, '#9aa7b4'); R.grid[nn.ty][nn.tx] = '.'; R.npcs.splice(n, 1); } caveText = { s:c.gone, shown:0 }; }
     if(it.kind === 'args10') G.args += 10;
     if(it.kind === 'thermos'){ G.maxHp = Math.min(16, G.maxHp + 2); G.hp = G.maxHp; }
     SFX.key(); say('', [c.got]);
@@ -1179,6 +1312,11 @@ function updateEnemies(){
         if(--e.t <= 0){ e.dir = ['up','down','left','right'][Math.random()*4|0]; e.t = 30 + (Math.random()*70|0); }
         const v = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] }[e.dir];
         if(moveEnt(e, v[0]*sp, v[1]*sp, true)) e.t = 0;
+      } else if(e.type === 'haggler'){
+        if(--e.t <= 0){ e.t = 50 + (Math.random()*60|0); e.dir = ['up','down','left','right'][Math.random()*4|0]; if(Math.random() < .5) e.dir = Math.abs(hero.x - e.x) > Math.abs(hero.y - e.y) ? (hero.x > e.x ? 'right' : 'left') : (hero.y > e.y ? 'down' : 'up'); }
+        const v = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] }[e.dir];
+        if(moveEnt(e, v[0]*sp, v[1]*sp, true)) e.t = 0;
+        if(e.say > 0) e.say--; else if(Math.random() < .006){ e.say = 110; e.line = HAGGLE_LINES[Math.random()*HAGGLE_LINES.length|0]; beep(500 + Math.random()*300, .05, 'square', .03); }
       } else if(e.type === 'promoter'){
         if(--e.t <= 0) e.t = 120;
         if(e.t > 30){
@@ -1286,7 +1424,7 @@ function enterCave(){
   fade = { t:0, dur:24, mid:()=>{
     R = loadCave(R.cave.id, parent);
     hero.x = 7.5*TS; hero.y = (ROWS - 2)*TS - 4; hero.facing = 'up'; hero.cell = null;
-    caveText = { s:CAVES[R.caveId].text, shown:0 };
+    const cv_ = CAVES[R.caveId]; caveText = { s:(cv_.leaves && G.caves[R.caveId]) ? cv_.gone : cv_.text, shown:0 };
   }};
   state = 'fade';
 }
@@ -1335,15 +1473,16 @@ function answerQuiz(i){
 /* ---------------- оверлеи ---------------- */
 function showOverlay(id){ hideOverlays(); document.getElementById(id).classList.add('show'); }
 function hideOverlays(){ document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('show')); }
-function newGame(cont){
+function newGame(cont, heroType){
   audioInit();
-  G = newProgress();
+  G = newProgress(); G.heroType = heroType || 'boy';
   let loc = 0;
-  if(cont){ const s = loadCheckpoint(); if(s){ Object.assign(G, { maxHp:s.maxHp, args:s.args, keys:s.keys || 0, hasFolder:s.hasFolder, deaths:s.deaths || 0, time:s.time || 0 }); loc = s.loc; } }
+  if(cont){ const s = loadCheckpoint(); if(s){ Object.assign(G, { heroType:s.heroType || 'boy', maxHp:s.maxHp, args:s.args, keys:s.keys || 0, hasFolder:s.hasFolder, deaths:s.deaths || 0, time:s.time || 0 }); loc = s.loc; } }
   hideOverlays(); particles = []; caveText = null; dialog = null;
   startLocation(loc);
 }
-document.getElementById('btnNew').onclick = ()=>newGame(false);
+document.getElementById('btnNew').onclick = ()=>newGame(false, 'boy');
+document.getElementById('btnNewGirl').onclick = ()=>newGame(false, 'girl');
 document.getElementById('btnCont').onclick = ()=>newGame(true);
 document.getElementById('btnRetry').onclick = ()=>{ hideOverlays(); particles = []; caveText = null; startLocation(G.loc); };
 document.getElementById('btnAgain').onclick = ()=>{ hideOverlays(); state = 'title'; refreshTitle(); showOverlay('title'); };
@@ -1384,8 +1523,9 @@ function update(){
   for(const k in pressed) pressed[k] = false;
 }
 
+let curGrid = null;
 function drawRoom(room, ox, oy, withEntities){
-  const th = room.theme;
+  const th = room.theme; curGrid = room.grid;
   ctx.save(); ctx.translate(ox, oy + HUD);
   for(let ty = 0; ty < ROWS; ty++) for(let tx = 0; tx < COLS; tx++){
     const x = tx*TS, y = ty*TS, d = doorAt(tx, ty);
@@ -1404,7 +1544,7 @@ function drawRoom(room, ox, oy, withEntities){
   for(const it of room.items) drawItem(it.kind, it.x, it.y);
   for(const n of room.npcs){
     const look = NPC_LOOK[n.kind] || NPC_LOOK.boss;
-    drawPerson(n.tx*TS, n.ty*TS, Object.assign({ facing:n.facing }, look));
+    drawPerson(n.tx*TS, n.ty*TS, Object.assign({ facing:n.facing, seated:n.seated }, look));
     if(n.supplier){ const bob = (frame >> 4) % 2; rect(n.tx*TS + 6, n.ty*TS - 7 - bob, 4, 4, '#f2b134'); rect(n.tx*TS + 5, n.ty*TS - 6 - bob, 6, 2, '#f2b134'); }
   }
   if(withEntities){
@@ -1414,6 +1554,7 @@ function drawRoom(room, ox, oy, withEntities){
     }
     if(room.boss) drawBoss(room.boss);
     for(const p of room.proj) drawProj(p);
+    for(const e of room.enemies) if(e.say > 0 && e.line) drawBubble(e.x + 8, e.y - 2, e.line);
   }
   ctx.restore();
 }
@@ -1438,16 +1579,15 @@ function drawHeroSprite(x, y){
   const step = hero.walk ? (hero.walk >> 3) % 2 : 0;
   const atk = hero.atk > 0;
   if(atk && hero.facing === 'up') drawFolderSwing(x, y);
-  drawPerson(x, y, Object.assign({ facing:hero.facing, step }, HERO_LOOK, G.hasFolder ? {} : {}));
+  drawPerson(x, y, Object.assign({ facing:hero.facing, step }, heroLook()));
   if(atk && hero.facing !== 'up') drawFolderSwing(x, y);
 }
 function drawFolderSwing(x, y){
-  const f = hero.facing;
-  const fc = '#f2b134', dk = '#8a5a0a';
-  if(f === 'right'){ orect(x + 13, y + 7, 12, 6, fc, dk); rect(x + 15, y + 9, 7, 1, '#ffffff'); }
-  if(f === 'left'){ orect(x - 9, y + 7, 12, 6, fc, dk); rect(x - 6, y + 9, 7, 1, '#ffffff'); }
-  if(f === 'up'){ orect(x + 5, y - 9, 6, 12, fc, dk); rect(x + 7, y - 7, 1, 7, '#ffffff'); }
-  if(f === 'down'){ orect(x + 5, y + 13, 6, 12, fc, dk); rect(x + 7, y + 15, 1, 7, '#ffffff'); }
+  const f = hero.facing, st = '#7a4a25';
+  if(f === 'right'){ rect(x + 12, y + 9, 12, 2, st); drawGJ(x + 26, y + 10); }
+  if(f === 'left'){ rect(x - 8, y + 9, 12, 2, st); drawGJ(x - 10, y + 10); }
+  if(f === 'up'){ rect(x + 7, y - 8, 2, 12, st); drawGJ(x + 8, y - 10); }
+  if(f === 'down'){ rect(x + 7, y + 13, 2, 12, st); drawGJ(x + 8, y + 26); }
 }
 
 function drawHUD(){
@@ -1471,7 +1611,7 @@ function drawHUD(){
   drawItem('A', ix, 31 + ((frame >> 4) % 2)); text('x' + G.args, ix + 16, 35);
   // слот папки
   orect(116, 14, 22, 28, '#ffffff'); text('A', 124, 6, INK);
-  if(G.hasFolder) drawFolderIcon(119, 21);
+  if(G.hasFolder) drawStaffIcon(119, 20);
   // кофе
   text('-КОФЕ-', 150, 6, '#d8423b');
   const cups = G.maxHp / 2;
@@ -1505,7 +1645,7 @@ function render(){
   if(state === 'card'){
     rect(0, 0, W, H, '#fbfdff');
     text(card.title, W/2, 84, '#3b82c4', 'center'); text(card.name, W/2, 104, INK, 'center');
-    drawPerson(W/2 - 8, 130, Object.assign({ facing:'down', step:(frame >> 3) % 2 }, HERO_LOOK));
+    drawPerson(W/2 - 8, 130, Object.assign({ facing:'down', step:(frame >> 3) % 2 }, heroLook()));
     return;
   }
   drawHUD();
@@ -1551,7 +1691,8 @@ function drawTitleScene(){
     if(edge) drawWall(th, tx*TS, ty*TS, tx, ty); else drawFloor(th, tx*TS, ty*TS, tx, ty);
   }
   drawTile('p', 16, 16, 1, 1, th); drawTile('p', 224, 16, 14, 1, th); drawTile('p', 16, 192, 1, 12, th); drawTile('p', 224, 192, 14, 12, th);
-  drawPerson(96, 150, Object.assign({ facing:'right', step:(frame >> 3) % 2 }, HERO_LOOK));
+  drawPerson(80, 150, Object.assign({ facing:'right', step:(frame >> 3) % 2 }, HERO_LOOKS.boy));
+  drawPerson(100, 150, Object.assign({ facing:'right', step:((frame >> 3) + 1) % 2 }, HERO_LOOKS.girl));
   drawPerson(144, 150, Object.assign({ facing:'left' }, NPC_LOOK.supplier));
   rect(150, 143 - ((frame >> 4) % 2), 4, 4, '#f2b134');
 }
