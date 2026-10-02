@@ -3,324 +3,304 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Угадай FOB-цену — Миллионер</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Угадай FOB-цену</title>
 <style>
   :root{
-    --bg-deep:#050c24;
-    --bg-mid:#0b1a44;
-    --stage-1:#0d2266;
-    --stage-2:#122c7a;
-    --cyan:#33d6d6;
-    --cyan-dim:#1b6b73;
-    --gold:#ffc61a;
-    --gold-dim:#8a6a12;
-    --pink:#e8407a;
-    --green:#3fbf4f;
-    --red:#e14848;
-    --text:#f4f7ff;
-    --text-dim:#9db3e0;
+    --space-1:#0a2a8a;
+    --space-2:#06185a;
+    --space-3:#020a2e;
+    --orange:#f5a623;
+    --orange-hi:#ffc04d;
+    --white:#ffffff;
+    --silver-1:#e9eef7;
+    --silver-2:#8a97b3;
+    --line:#5f8cff;
+    --green:#2fae3f;
+    --red:#d63a3a;
+    --text-dim:#a9b8e0;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0;
+    color:var(--white);
+    font-family:Arial, "Helvetica Neue", Helvetica, sans-serif;
+    min-height:100vh;
+    background:var(--space-3);
+  }
+
+  /* ============ SPACE BACKGROUND ============ */
+  .space{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
     background:
-      radial-gradient(ellipse 1000px 500px at 50% 0%, #14306f 0%, transparent 60%),
-      linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-deep) 100%);
-    color:var(--text);
-    font-family:'Inter',system-ui,sans-serif;
+      radial-gradient(ellipse 60% 45% at 30% 35%, rgba(70,120,255,0.55) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 35% at 75% 20%, rgba(60,90,230,0.45) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 60% 85%, rgba(40,70,200,0.40) 0%, transparent 70%),
+      linear-gradient(160deg, var(--space-1) 0%, var(--space-2) 50%, var(--space-3) 100%);
+  }
+  .stars, .stars2, .stars3{ position:absolute; inset:0; }
+  .stars{
+    background-image:
+      radial-gradient(1px 1px at 20px 30px, #fff, transparent),
+      radial-gradient(1px 1px at 90px 120px, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 160px 60px, #dfe8ff, transparent),
+      radial-gradient(1px 1px at 230px 170px, #fff, transparent),
+      radial-gradient(1px 1px at 50px 200px, #cfdcff, transparent),
+      radial-gradient(1.2px 1.2px at 280px 20px, #fff, transparent);
+    background-size:300px 230px;
+    opacity:0.85;
+  }
+  .stars2{
+    background-image:
+      radial-gradient(2px 2px at 60px 80px, #fff, transparent),
+      radial-gradient(1.6px 1.6px at 340px 260px, #e6eeff, transparent),
+      radial-gradient(2px 2px at 420px 40px, #fff, transparent);
+    background-size:520px 380px;
+    animation:twinkle 4s ease-in-out infinite alternate;
+  }
+  .stars3{
+    background-image:
+      radial-gradient(3px 3px at 120px 140px, rgba(255,255,255,0.95), transparent),
+      radial-gradient(2.5px 2.5px at 600px 420px, rgba(220,232,255,0.9), transparent);
+    background-size:780px 560px;
+    filter:drop-shadow(0 0 4px #fff);
+    animation:twinkle 6s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes twinkle{ from{opacity:0.45;} to{opacity:1;} }
+
+  #app{ position:relative; z-index:1; min-height:100vh; overflow-x:hidden; }
+
+  /* ============ LAYOUT ============ */
+  .game{
+    display:grid;
+    grid-template-columns:1fr 260px;
     min-height:100vh;
   }
-  .wrap{ width:100%; margin:0; padding:0; }
+  .main{
+    display:flex; flex-direction:column; justify-content:center;
+    padding:20px clamp(12px,3vw,40px) 24px;
+    min-width:0;
+  }
+  .panel{
+    border-left:2px solid rgba(140,175,255,0.75);
+    box-shadow:-6px 0 18px rgba(0,0,0,0.35);
+    background:linear-gradient(180deg, rgba(4,14,60,0.55), rgba(2,8,36,0.7));
+    padding:18px 16px;
+    display:flex; flex-direction:column; gap:18px;
+  }
+  @media (max-width:860px){
+    .game{ grid-template-columns:1fr; }
+    .panel{ border-left:none; border-top:2px solid rgba(140,175,255,0.75); }
+  }
 
-  /* ============ STAGE FRAME ============ */
-  .stage{
+  /* ============ ROUND LOGO / PHOTO STAGE ============ */
+  .stage-top{ position:relative; display:flex; flex-direction:column; align-items:center; margin-bottom:10px; }
+  .ring{
     position:relative;
+    width:min(340px, 74vw);
+    aspect-ratio:1;
+  }
+  .ring svg{ position:absolute; inset:0; width:100%; height:100%; filter:drop-shadow(0 8px 22px rgba(0,0,0,0.55)); }
+  .ring .photo{
+    position:absolute; left:50%; top:50%;
+    width:60%; height:60%;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:#fff;
     overflow:hidden;
-    background:
-      repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 4px),
-      radial-gradient(circle at 50% 8%, var(--stage-2) 0%, var(--stage-1) 45%, #071238 100%);
-    padding:22px clamp(16px,4vw,60px) 0;
-    min-height:100vh;
-    width:100%;
-    display:flex;
-    flex-direction:column;
-  }
-  /* rotating rays behind everything */
-  .stage::before{
-    content:"";
-    position:absolute; top:38%; left:50%;
-    width:1600px; height:1600px; margin:-800px 0 0 -800px;
-    background:repeating-conic-gradient(from 0deg, rgba(120,180,255,0.07) 0deg 2deg, transparent 2deg 16deg);
-    animation:spin 50s linear infinite;
-    pointer-events:none;
-  }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-
-  /* audience silhouette strip at very bottom */
-  .audience-strip{
-    position:absolute; left:0; right:0; bottom:0; height:34px;
-    background:
-      radial-gradient(circle at 5% 100%, #061033 0 10px, transparent 11px) repeat-x,
-      radial-gradient(circle at 15% 100%, #061033 0 12px, transparent 13px) repeat-x;
-    background-size:40px 34px, 60px 34px;
-    opacity:0.8;
-  }
-
-  .content{ position:relative; z-index:2; max-width:1300px; margin:0 auto; width:100%; flex:1; display:flex; flex-direction:column; justify-content:center; padding-bottom:40px; }
-
-  /* ============ TOP ICON BAR ============ */
-  .iconbar{ display:flex; justify-content:space-between; align-items:flex-start; padding:2px 2px 6px; }
-  .icon-group{ display:flex; gap:10px; }
-  .icon-btn{
-    width:44px; height:44px; border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #163a8c, #081848);
-    border:2px solid var(--cyan);
-    color:var(--text);
+    border:3px solid #c9d3e8;
+    box-shadow:0 0 0 3px #1b2550, 0 0 26px rgba(120,160,255,0.55);
     display:flex; align-items:center; justify-content:center;
-    font-size:16px; cursor:pointer;
-    box-shadow:0 3px 0 rgba(0,0,0,0.35);
+  }
+  .ring .photo img{ width:84%; height:84%; object-fit:contain; }
+
+  .timer{
+    position:absolute; right:-4%; bottom:4%;
+    width:58px; height:58px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #1d2f72, #050b26);
+    border:3px solid var(--silver-2);
+    box-shadow:0 0 0 2px #050b26, 0 4px 10px rgba(0,0,0,0.5);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:22px; color:var(--white);
+  }
+  .timer.low{ border-color:var(--orange); color:var(--orange); animation:pulse .6s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.1);} }
+
+  .facts{ display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .fact{
+    font-size:12.5px; color:var(--text-dim);
+    background:rgba(0,0,0,0.45);
+    border:1px solid rgba(160,185,240,0.55);
+    border-radius:100px; padding:5px 12px;
+  }
+  .fact b{ color:var(--white); font-weight:600; }
+
+  /* ============ LOZENGES (question / answers) ============ */
+  .loz-row{ position:relative; }
+  .loz-row::before{
+    content:""; position:absolute; left:-60px; right:-60px; top:50%; height:2px;
+    background:linear-gradient(90deg, transparent, #8aa6e6 12%, #c9d6f5 50%, #8aa6e6 88%, transparent);
+    transform:translateY(-50%);
+    z-index:0;
+  }
+  .loz{
+    --cut:26px;
+    position:relative; z-index:1;
+    clip-path:polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% 50%, calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 50%);
+    background:linear-gradient(180deg, #f2f5fb 0%, #9aa7c2 45%, #5b6683 55%, #c3cce0 100%);
+    padding:2px;
+  }
+  .loz-in{
+    clip-path:polygon(calc(var(--cut) - 1px) 0, calc(100% - var(--cut) + 1px) 0, 100% 50%, calc(100% - var(--cut) + 1px) 100%, calc(var(--cut) - 1px) 100%, 0 50%);
+    background:linear-gradient(180deg, #24304f 0%, #0b1022 40%, #000 60%, #0f1730 100%);
+    color:var(--white);
+    width:100%; height:100%;
+  }
+  .question .loz{ --cut:40px; }
+  .question .loz-in{
+    padding:22px 56px; text-align:center;
+    font-size:clamp(16px, 1.9vw, 21px); line-height:1.35;
+    min-height:76px; display:flex; align-items:center; justify-content:center;
+  }
+
+  .answers{ display:grid; grid-template-columns:1fr 1fr; gap:12px 22px; margin-top:16px; }
+  @media (max-width:560px){ .answers{ grid-template-columns:1fr; } }
+  .ans-btn{
+    all:unset; display:block; cursor:pointer; width:100%;
+  }
+  .ans-btn:focus-visible .loz{ outline:2px solid var(--orange); }
+  .ans-btn .loz-in{
+    display:flex; align-items:center; gap:10px;
+    padding:12px 34px; min-height:46px;
+    font-size:clamp(15px,1.6vw,19px);
+  }
+  .ans-btn .dot{ width:8px; height:8px; border-radius:50%; background:var(--orange); flex:none; box-shadow:0 0 6px var(--orange); }
+  .ans-btn .let{ color:var(--orange); }
+  .ans-btn:hover:not([disabled]) .loz-in{ background:linear-gradient(180deg,#334474 0%,#141c3a 45%,#060a18 60%,#1b2648 100%); }
+  .ans-btn[disabled]{ cursor:default; }
+  .ans-btn.removed{ visibility:hidden; }
+
+  .ans-btn.selected .loz-in{ background:linear-gradient(180deg,#ffd27a 0%,#f5a623 50%,#c77a00 100%); color:#000; }
+  .ans-btn.selected .let, .ans-btn.selected .dot{ color:#000; background-color:#000; box-shadow:none; }
+  .ans-btn.selected .let{ background:none; }
+  .ans-btn.correct .loz-in{ background:linear-gradient(180deg,#7be38a 0%,#2fae3f 50%,#16701f 100%); color:#fff; }
+  .ans-btn.correct .let{ color:#fff; }
+  .ans-btn.correct .dot{ background:#fff; box-shadow:none; }
+  .ans-btn.correct.blink .loz-in{ animation:blink .35s steps(2) 3; }
+  @keyframes blink{ 50%{ filter:brightness(0.55);} }
+  .ans-btn.wrong .loz-in{ background:linear-gradient(180deg,#ffd27a 0%,#f5a623 50%,#c77a00 100%); color:#000; }
+  .ans-btn.wrong .let{ color:#000; }
+  .ans-btn.wrong .dot{ background:#000; box-shadow:none; }
+
+  .feedback{ text-align:center; min-height:24px; margin-top:14px; font-size:15px; color:var(--silver-1); }
+  .feedback.ok{ color:#8ff09b; }
+  .feedback.bad{ color:var(--orange-hi); }
+
+  .bottom-row{ display:flex; justify-content:center; margin-top:10px; }
+  .loz-btn{ all:unset; cursor:pointer; display:inline-block; min-width:240px; }
+  .loz-btn .loz{ --cut:20px; }
+  .loz-btn .loz-in{ padding:11px 34px; text-align:center; font-size:16px; font-weight:700; letter-spacing:0.03em; }
+  .loz-btn:hover:not([disabled]) .loz-in{ background:linear-gradient(180deg,#ffd27a 0%,#f5a623 50%,#c77a00 100%); color:#000; }
+  .loz-btn[disabled]{ opacity:0.35; cursor:not-allowed; }
+  .loz-btn.primary .loz-in{ background:linear-gradient(180deg,#ffd27a 0%,#f5a623 50%,#c77a00 100%); color:#000; }
+  .loz-btn.primary:hover .loz-in{ filter:brightness(1.08); }
+
+  /* ============ RIGHT PANEL ============ */
+  .lifelines{ display:flex; justify-content:space-between; gap:8px; }
+  .life{
+    all:unset; cursor:pointer; position:relative;
+    width:70px; height:46px; border-radius:50%;
+    background:radial-gradient(ellipse at 50% 30%, #3a4f8c 0%, #101a40 55%, #050a1f 100%);
+    border:2px solid #b9c5e2;
+    box-shadow:0 0 0 2px #0a1233, 0 3px 8px rgba(0,0,0,0.5);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:15px; color:#fff;
     transition:transform .12s ease;
   }
-  .icon-btn:hover:not(:disabled){ transform:translateY(-2px); }
-  .icon-btn:disabled{ opacity:0.3; cursor:not-allowed; }
-  .icon-btn.small{ width:38px; height:38px; font-size:12px; font-family:'Oswald',sans-serif; font-weight:600; }
-
-  /* ============ HOST + LOGO BADGE ============ */
-  .host-row{
-    display:flex; align-items:flex-end; justify-content:center;
-    gap:18px; position:relative;
-    min-height:150px;
-    margin-bottom:6px;
-  }
-  .host-wrap{ position:relative; flex:none; display:flex; align-items:flex-start; gap:10px; }
-  .badge{
-    position:relative; top:14px;
-    width:64px; height:52px; border-radius:10px;
-    background:radial-gradient(circle at 40% 30%, #3a1560, #170733);
-    border:3px solid var(--gold);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    font-family:'Oswald',sans-serif; z-index:3; flex:none;
-    box-shadow:0 0 18px rgba(255,198,26,0.3);
-  }
-  .badge .q-n{ color:var(--gold); font-weight:700; font-size:19px; line-height:1; }
-  .badge .q-l{ color:var(--text-dim); font-size:8px; letter-spacing:0.06em; margin-top:1px; }
-
-  .host{ width:150px; height:190px; flex:none; position:relative; }
-  .speech{
-    background:#fff; color:#1a1a2e;
-    border-radius:16px; padding:12px 16px;
-    font-size:14px; font-weight:600;
-    max-width:250px; position:relative;
-    margin-bottom:36px; margin-left:6px;
-    min-height:20px;
-    display:flex; align-items:center;
-    opacity:0; transform:translateX(-8px);
-    transition:opacity .25s ease, transform .25s ease;
-  }
-  .speech.show{ opacity:1; transform:translateX(0); }
-  .speech::before{
-    content:"";
-    position:absolute; left:-16px; bottom:16px;
-    border:9px solid transparent; border-right-color:#fff;
+  .life:hover:not([disabled]){ transform:translateY(-2px); box-shadow:0 0 0 2px #0a1233, 0 0 14px rgba(140,180,255,0.7); }
+  .life svg{ width:30px; height:30px; }
+  .life[disabled]{ cursor:not-allowed; opacity:0.55; }
+  .life[disabled]::after{
+    content:""; position:absolute; inset:6px 14px;
+    background:
+      linear-gradient(35deg, transparent 46%, var(--red) 46% 54%, transparent 54%),
+      linear-gradient(-35deg, transparent 46%, var(--red) 46% 54%, transparent 54%);
   }
 
-  /* ============ MAIN 3-COL LAYOUT ============ */
-  .main-grid{
-    display:grid;
-    grid-template-columns:170px 1fr 190px;
-    gap:14px;
-    align-items:start;
-  }
-  @media (max-width:820px){
-    .main-grid{ grid-template-columns:1fr; }
-    .side-left{ order:3; }
-    .side-right{ order:2; }
-  }
-
-  /* ---- left: winnings box ---- */
-  .win-box{
-    background:linear-gradient(180deg, #0e2a6e, #081638);
-    border:2px solid var(--cyan);
-    border-radius:12px;
-    padding:12px 10px;
-    text-align:center;
-  }
-  .win-box .lbl{ font-size:11.5px; color:var(--text-dim); margin-bottom:4px; }
-  .win-box .amt{ font-family:'Oswald',sans-serif; color:var(--gold); font-size:19px; font-weight:600; margin-bottom:10px; }
-  .cashout-btn{
-    background:var(--cyan); color:#04211f; border:none;
-    font-family:'Oswald',sans-serif; font-weight:600; font-size:13px;
-    padding:9px 6px; border-radius:8px; width:100%; cursor:pointer;
-    box-shadow:0 3px 0 var(--cyan-dim);
-  }
-  .cashout-btn:hover{ filter:brightness(1.08); }
-  .cashout-btn:disabled{ opacity:0.35; cursor:not-allowed; }
-
-  /* ---- center: shirt + facts + question + options ---- */
-  .shirt-box{
-    background:radial-gradient(ellipse at 50% 30%, rgba(120,170,255,0.14), transparent 70%);
-    border-radius:14px;
-    display:flex; align-items:center; justify-content:center;
-    height:min(30vh, 300px);
-    position:relative;
-    margin-bottom:8px;
-  }
-  .shirt-box img{ height:100%; width:auto; max-width:100%; object-fit:contain; border-radius:10px; filter:drop-shadow(0 10px 18px rgba(0,0,0,0.45)); background:#fff; padding:6px; }
-
-  .facts{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
-  .fact{
-    font-size:11.5px; color:var(--text-dim);
-    background:rgba(255,255,255,0.05); border:1px solid rgba(120,170,255,0.3);
-    border-radius:100px; padding:4px 10px;
-  }
-  .fact b{ color:var(--text); }
-
-  .q-hex{
-    background:linear-gradient(180deg,#123a8f,#0a2360);
-    border:2px solid var(--cyan);
-    clip-path:polygon(2% 0,98% 0,100% 50%,98% 100%,2% 100%,0 50%);
-    padding:12px 30px;
-    text-align:center;
-    font-size:14.5px;
-    font-weight:600;
-    margin-bottom:10px;
-  }
-
-  .options{ display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; }
-  @media (max-width:520px){ .options{ grid-template-columns:1fr; } }
-  .opt{
-    background:linear-gradient(180deg,#0e2a6e,#081848);
-    border:2px solid var(--cyan);
-    clip-path:polygon(3% 0,97% 0,100% 50%,97% 100%,3% 100%,0 50%);
-    padding:10px 18px;
-    font-size:13.5px; font-weight:600;
-    color:var(--text);
-    cursor:pointer;
-    text-align:left;
-    transition:background .15s ease, border-color .15s ease;
-  }
-  .opt:hover:not(:disabled){ background:linear-gradient(180deg,#173a8f,#0c2560); }
-  .opt:disabled{ cursor:default; }
-  .opt.removed{ visibility:hidden; }
-  .opt b{ color:var(--gold); margin-right:4px; }
-  .opt.selected{ border-color:var(--gold); background:linear-gradient(180deg,#4a3a10,#2a2308); }
-  .opt.correct{ border-color:var(--green); background:linear-gradient(180deg,#1c6b2c,#0e3a18); }
-  .opt.wrong{ border-color:var(--red); background:linear-gradient(180deg,#7a1f1f,#3a0d0d); }
-
-  .footer-row{ display:flex; justify-content:center; margin:12px 0 10px; }
-
-  .q-hex-row{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-  .q-hex-row .q-hex{ flex:1; margin-bottom:0; }
-  .timer-wrap{
-    flex:none; width:46px; height:46px; border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #163a8c, #081848);
-    border:2.5px solid var(--cyan);
-    display:flex; align-items:center; justify-content:center;
-    transition:border-color .3s ease, box-shadow .3s ease;
-  }
-  .timer-wrap .timer-num{ font-family:'Oswald',sans-serif; font-weight:700; font-size:18px; color:var(--cyan); }
-  .timer-wrap.low{ border-color:var(--red); box-shadow:0 0 14px rgba(225,72,72,0.6); animation:timerPulse .6s ease-in-out infinite; }
-  .timer-wrap.low .timer-num{ color:var(--red); }
-  @keyframes timerPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.12); } }
-
-  .calc-throw{
-    position:fixed; font-size:38px; z-index:200; pointer-events:none;
-    animation: calcFly 1s cubic-bezier(.25,.6,.4,1) forwards;
-  }
-  @keyframes calcFly{
-    0%{ transform:translate(0,0) rotate(0deg) scale(1); opacity:1; }
-    70%{ opacity:1; }
-    100%{ transform:translate(260px,-60px) rotate(560deg) scale(0.7); opacity:0; }
-  }
-  .next-btn{
-    background:var(--gold); color:#241b00; border:none;
-    font-family:'Oswald',sans-serif; font-weight:700; font-size:14px;
-    padding:10px 26px; border-radius:9px; cursor:pointer;
-    box-shadow:0 3px 0 var(--gold-dim);
-  }
-  .next-btn:disabled{ opacity:0.3; cursor:not-allowed; }
-
-  /* ---- right: ladder ---- */
-  .ladder{
-    background:linear-gradient(180deg,#0e2a6e,#081638);
-    border:2px solid var(--cyan);
-    border-radius:12px;
-    padding:8px 10px;
-    display:flex; flex-direction:column-reverse;
-    max-height:520px;
-    overflow-y:auto;
-  }
+  .ladder{ display:flex; flex-direction:column-reverse; gap:1px; }
   .rung{
-    display:flex; justify-content:space-between; gap:6px;
-    padding:3.5px 6px; border-radius:5px;
-    font-family:'Oswald',sans-serif; font-size:12px; color:var(--text-dim);
+    display:grid; grid-template-columns:34px 14px 1fr; align-items:center;
+    padding:2px 10px; border-radius:100px;
+    font-size:16px; font-weight:700; line-height:1.35;
+    color:var(--orange);
   }
-  .rung.checkpoint{ color:var(--gold); }
-  .rung.active{ background:var(--gold); color:#241b00; font-weight:700; }
-  .rung.done{ color:var(--text); }
+  .rung .n{ text-align:right; }
+  .rung .m{ text-align:center; font-size:9px; }
+  .rung .p{ padding-left:4px; }
+  .rung.checkpoint{ color:var(--white); }
+  .rung.active{
+    background:linear-gradient(180deg,#ffd27a 0%,#f5a623 50%,#d98a00 100%);
+    color:#fff; text-shadow:0 1px 1px rgba(0,0,0,0.45);
+  }
+  .rung.done .m::before{ content:"◆"; }
+
+  .panel-foot{ margin-top:auto; display:flex; flex-direction:column; gap:10px; align-items:stretch; }
+  .guar{ text-align:center; font-size:12.5px; color:var(--text-dim); }
+  .guar b{ display:block; color:var(--orange); font-size:18px; margin-top:2px; }
+  .panel .loz-btn{ min-width:0; width:100%; }
+
+  @media (max-width:860px){
+    .ladder{ display:grid; grid-template-columns:repeat(2, 1fr); gap:2px 10px; }
+    .rung{ font-size:14px; }
+  }
 
   /* ============ START / END ============ */
-  .center-card{
-    background:linear-gradient(180deg,#0e2a6e,#081638);
-    border:2px solid var(--cyan);
-    border-radius:16px;
-    padding:40px 30px;
-    text-align:center;
-    max-width:560px;
-    margin:60px auto;
+  .center{
+    min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:30px 16px; text-align:center; gap:18px;
   }
-  .center-card h1{ font-family:'Oswald',sans-serif; color:var(--gold); font-size:28px; margin:0 0 12px; }
-  .center-card p{ color:var(--text-dim); line-height:1.6; font-size:14.5px; }
-  .rules{ text-align:left; display:grid; gap:9px; margin:20px 0; font-size:13.5px; }
-  .rules .r{ display:flex; gap:9px; }
-  .primary-btn{
-    background:var(--gold); color:#241b00; border:none;
-    font-family:'Oswald',sans-serif; font-weight:700; font-size:15px;
-    padding:12px 24px; border-radius:9px; cursor:pointer;
-    box-shadow:0 3px 0 var(--gold-dim);
-  }
-  .final-amount{ font-family:'Oswald',sans-serif; font-size:38px; color:var(--gold); margin:8px 0; }
+  .center .ring{ width:min(380px, 80vw); }
+  .center .loz-row{ width:min(720px, 100%); }
+  .center .question .loz-in{ flex-direction:column; gap:6px; }
+  .center .sub{ font-size:14px; color:var(--text-dim); }
+  .rules{ display:grid; grid-template-columns:1fr 1fr; gap:10px 22px; width:min(720px,100%); text-align:left; }
+  @media (max-width:560px){ .rules{ grid-template-columns:1fr; } }
+  .rules .loz-in{ display:flex; align-items:center; gap:10px; padding:10px 30px; font-size:14px; }
+  .rules .let{ color:var(--orange); font-weight:700; }
+  .final-amount{ font-size:clamp(34px,6vw,54px); font-weight:700; color:var(--orange); text-shadow:0 0 18px rgba(245,166,35,0.45); }
 
   /* ============ MODALS ============ */
   .modal-bg{
-    position:fixed; inset:0; background:rgba(2,6,20,0.75);
+    position:fixed; inset:0; background:rgba(0,4,20,0.75);
     display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;
   }
   .modal{
-    background:linear-gradient(180deg,#0e2a6e,#081638);
-    border:2px solid var(--cyan); border-radius:16px;
-    padding:24px; max-width:380px; width:100%; text-align:center;
+    background:linear-gradient(180deg,#14214f,#040a24);
+    border:2px solid #b9c5e2; border-radius:18px;
+    box-shadow:0 0 0 3px #050b26, 0 0 30px rgba(110,150,255,0.45);
+    padding:24px; max-width:400px; width:100%; text-align:center;
   }
-  .modal h3{ font-family:'Oswald',sans-serif; color:var(--gold); margin:4px 0 10px; }
-  .ghost{ font-size:56px; animation:float 2.2s ease-in-out infinite; }
-  @keyframes float{ 0%,100%{transform:translateY(0) rotate(-2deg);} 50%{transform:translateY(-10px) rotate(2deg);} }
+  .modal h3{ color:var(--orange); margin:4px 0 10px; font-size:19px; }
+  .modal .who{ font-size:40px; }
+  .modal .name{ color:var(--text-dim); font-size:13px; margin-bottom:4px; }
   .modal-speech{
-    background:rgba(255,255,255,0.06); border:1px solid rgba(120,170,255,0.3);
-    border-radius:12px; padding:12px 14px; font-size:13.5px; text-align:left; margin:12px 0; line-height:1.5;
+    background:rgba(0,0,0,0.4); border:1px solid rgba(160,185,240,0.45);
+    border-radius:12px; padding:12px 14px; font-size:14px; text-align:left; margin:12px 0; line-height:1.5;
   }
-  .modal-close{
-    background:none; border:1px solid var(--cyan); color:var(--text);
-    padding:9px 18px; border-radius:8px; cursor:pointer; margin-top:4px;
-  }
-  .abar-row{ display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:8px; }
-  .abar-label{ width:16px; font-family:'Oswald',sans-serif; color:var(--gold); }
-  .abar-track{ flex:1; background:rgba(255,255,255,0.08); border-radius:6px; height:14px; overflow:hidden; }
-  .abar-fill{ height:100%; background:linear-gradient(90deg,var(--cyan-dim),var(--cyan)); width:0%; transition:width 1s ease; }
-  .abar-pct{ width:34px; text-align:right; color:var(--text-dim); }
+  .modal .loz-btn{ min-width:160px; margin-top:6px; }
+  .bars{ display:flex; justify-content:center; align-items:flex-end; gap:16px; height:170px; margin:16px 0 6px; }
+  .bar{ display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; width:44px; }
+  .bar .pct{ font-size:13px; margin-bottom:4px; }
+  .bar .col{ width:100%; height:0; background:linear-gradient(180deg,#ffd27a,#f5a623 60%,#b56d00); border:1px solid #ffe2a8; transition:height 1s ease; }
+  .bar .l{ margin-top:6px; color:var(--orange); font-weight:700; }
 </style>
 </head>
 <body>
-<div class="wrap"><div id="app"></div></div>
+<div class="space"><div class="stars"></div><div class="stars2"></div><div class="stars3"></div></div>
+<div id="app"></div>
 
 <script>
-/* ============================================================
-   ДАННЫЕ 20 РАУНДОВ — ЗАГЛУШКА. Цена — себестоимость (FOB) в AED
-   за штуку. Заменю на реальные модели/фото/цены из вашего файла.
-   Сложность нарастает: разброс вариантов сужается к концу.
-   ============================================================ */
 const ROUNDS = [
   { country:'Бангладеш', fabric:'Джерси (трикотаж)', decor:'Принт по всей поверхности (AOP)', img:'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCADIAJ0DASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3on6dPSjP0/Kg9fwpKAFz9Pyoz9PypKKAFz9Pyoz9PypKKAFz9Pyoz9PypKKAFz9Pyoz9PypKKAFz9Pyoz9PypKKAFz9Pyoz9PypKKAFz9Pyoz9PypKKAFz9Pyoz9PypKKAFz9Pypy96ZSr3oAD1/CkpT1/CkoAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigApV70lKvegAPX8KSlPX8KSgAooooAKKgubiC0t3nuZkhhQZZ5GwB+NcLrfxNtog0OjQmeTp58oKxj6Dq36VM5xgrtm9DDVa81Cmrv+tzvy6ouXbj3qpZavp2oyzxWV5DcSW7bJljcEoevNeF3Wr6rqly0l1fXMjNkbVchcegUYGKyxcXGkalFqdnPJASPLleJsYH8J+nb8q5vrabske3Hh+fK+aXvemh9K0V5Lp3xO1OBVW+ghuwOrqfLY/zH6Cugh+KOkuo860vYj3ARWH6GtVXpvqefVyjFU3bkv6a/wDBO6orgrr4o6bGv+jWN7M3+1tQfzP8q5DWviFrGsBre3K2UT8ERMS+Pd+34AUSrwXW5dDJ8VVeseVd3/luetW2vaVdXklnb6hBJPGxV4lcbgR147/hWlXzYXe3UNBGzeX8zspwUA53Z9a6bw94+1TTAfMlkv7Rj8qTt8y+6t1x9azjif5kb4jJmm1RnzNbrqe20VzuieMtJ1tliin8m5I/1E3ysfp2b8K6E57V0ppq6PGnTnTlyzVn5i0UUUyApV70lKvegAPX8KSlPX8KSgAqG4njtLeS4lYKkal3Y9gBk1NXBfEnXGtrFNJgb95cfNNg/djHb8T+gNRUmoRcmdGFw8sRWjTj1/LqcBrXiG+1zUPOuZPMt0kJjtn/ANWFzwCB14xz1rMVTwByaW3lEYkUor71MeXH3TkHI9+K0LERBcxwGec4BVuFTn72f84/GvLbcndn3tOlDDx9yNkU5LaWKNZJUKq/AB4JBGc49MUsdvJdM6RxGQ7CzIFzhQOePTFW76aB5JAn76Zj88x6A56IPTtVNHeI7o2ZDjGVODUu1zaLlKN7WZTS3aBgEJlt+y5+dB7E9RTpJIF+6ZBjrvQrir9hbx3V/HDK6wwuwV52OFiyRyfWuyHw8WR/3erJ5an5mKqSVx94Ybj8a0VOclexyVMzw9Ko6UpWa36/keesruxWMAj+8c4qSNBGu0YLHqcVPND5dxNEsodEkZVdejAHAP409LOY2T3SKPIRwrNkcMegqNdju50km3uQcx2bMJmDO+ySNTjeO38/XpmqltbJap8gIOMHnjFW8c+/tQvlbZPM37in7sqAQGyOvtjNOU7pI46GGWHlOcvelJ3vZXs9EtOxesDG0QKwRgggSyynO09toHOT/OvRPB2v3Tx20V7NJJb3W4W0k4AkDL1U49RyO/rXlayGFg64O0hsHocetWF1G4F/DeHIMT74ogxCpznA9KqFSUGmvmc2YZe8QtP6Z9EUVk+HdZj1vSIbtMAuuHX+6w6itavUTTV0fEThKEnGW6ClXvSUq96ZIHr+FJSnr+FJQBU1C9h06wnu52xHEhc+/t9T0rwrUr6XU76e9uH/AH8sgITBOF54B7AYArtviNqzTTJpNsQVjw8+DjLdVX8Bz+IrgOvHIxwQe1cGLcnbsfT5BTpWk1Jc+l11S/4I6DT7mWESLExLksigcsvqPypD5sBxh43xgggqcGuk8M6dFq+mXtvFJKNRt7dvJy21ACflIPXI5/SszxAL4avKNSEJugEV3iPyyAAAPjsSByO1ZVIxUVKJ24DE4qWJnRxNtG7W3t09VYz2hlS0a6aKQW6kBpdp2gngc9KSSJ4nKSLhh1HX3rQtNTWKzitbmB7mOGfzBG0mI8ZBxj1znt6VHqU76ncSXzW/lRysE+TO3cB0B9cc1z63s0ehCpXc2pxSj0f5EVsG+xEm3jlEjncjR4JXjhj3HH8/rVzSfB2q+IdSa7kQWVvPIWkkMm4qP7oXJOcYGG6VlKJE3BZDhjlsjn8KuTaldS+TiRovKAwYmKlm/vsc5LH1/DpXZKpCyS6HgYbK8dDEVKs3Fc3XdojvoEtdQuraPOyKVo1JOcgHHWqxZthTcdpOcZ4zUk0sk8ryTSNJK5yzsclj6n1qSwgN1drGEDgAuVLYBA9650uaVkfQVsRHCYZzq68qu7av5Gt4b0+x1JzCb2S11MSB7Z1IIPphSOSD15zjp0rSPghdIjk1HUroXUEcbvJAsbDL4OPm7jPWodJddG8jV7Wwiui1wbeNCxjkbdwNmQVyPr65rQ1nxPYpZXFgbPVLS5cM5tpcKhZ92SzZOVyc4HHArr9nGCtLdHzNLMa+LnGdFNRl0dr/ACe6XU8+ETzK6rjIXc2Tjgdat2dlJf3DxRPGmxC5eVtq8ds+tUpljW5tlWQs7Izum3G0g4HPfIOa1rDUbTT9Nvjc2zTTFP3BBxsJ6n2wcHPWuOd0tNz6etUqRpuVNXZufDvXxY60+mSviG56An7r/wBM9K9iFfNFqZoZPOklBuGIfzAu05HT8q978K64muaJDcbh5yjZKvowrvw0/sHzGdYRqSrpb6P1/wCCblKvekpV711HgAev4UlKev4UlAHl/iLwjqljdT39mWvonZnbP+tUnkkjow+np0rjbZbcGRbxpVIQ7NijO7tuB6CvoH8aw9c8Ladryn7RH5c4+7PGAHHsfUfWuatQctYnqZbjaeFk+aPxbtb73PG7S6urYzpau6/aIzHIqDO9e4pIrSSSxmvPMBRJADuPzsT7dT9a7S/+Hn2dHktb+4ikBPlSHHl4IxhmGCM889Oa4Z45IUZG2+ZHkHacgkehHWuKcJQspH1eGxdHEOUqL10vpqKBS5O3buO3OcZ4zW5eaemg2Eou4Ld3u4T5TvISyYxyCRgE5B4PasGyunOLiMFRn5Ny4yPcH8ayi+ZXWx0UMVGtflXp5mgLaI2sImXyy+dsi5IDHs/YfzplpJJpt288LwStGu0huQd3BwD1xSTXETwyCJGgZyN8UbHY3vg9KqAEkAYyemapu2wRg5Rans+n9f5grukyyo5WRW3Ky8EHOcimAEMGDMGByGzzn1qybUh13FgGUFcnHcg9PpTCkcV35bsxjDDcVHIHGcZqvZtQU7nDTzLD1sVPCKDbS1bSs/LzOp0zxbAumyxX1pam5tQJbFvJO3fjac46MfX3NcrqF7PqV9JeXTbppOpxgAdgB2FLdG3+0v8AZi5gDfIX+8R7026gmijikexuII2ULvkVsSN/eGQMZ44qpTlJWfQ2oYbDYefMo25tvLTZdjHuXCavbAnAMLfzrd1XSZtKFr5rBmuIRLgDBQ91P6V0nhjw6IfEKwajBFI8tkXCPEJCgLYKnI4NdbdeCbfUtSW51CaRoIkCRW6Hbx1JY/XsOwFaRoSlHzOKtnMKdblb91dtb6aWPK9O03UdWY2VhA025gzgD5VI4BZu3U/nXq/g7wo/h2GSSa6Ms8wG9VGEXHp6/WuisrC10+3W3tLeOGJeiRrgVarppYdQ1e54ePzWeKThFcsX979QpV70lKveug8kD1/CkpT1/CkoAKKKKAG43ZB6GvD9dt3i1m8byykT3EojIXCna2CB24r3EDFeReNtSiu9XNrbgeXbO4YgYBcnnH0x+ea5cWlyK57mQzmsQ4xWjWvkchNZte3LTXBluH6x9WKAck8/mT7VZX58bcsW6bRnP0p0e/5vLLfdO7H93HOfap9O1CfS7xLu28vzk+6ZEDY9cZ6emfc15610ex9ZyOmpezS8ltr5nQXXhZbbwrHeXUkdpeRku4kbh1b7qH0YcdPU1z76bdJJOsaidIUEjywncoBHf6V32ganJ4sg1BdWt7eSCEf6qNT5hBBPryOOD61F4htItL8Pie3txDAEAVdzLLufAy/bpwfpiuqdKLp80D5qOYYyjiVRlZ66rffZJnnZLM2d7dAM57DpSY+bAySf1qSV/NkaTy0Qsc7FB2g+g9qSaQyzSSsiKXYswQYGT14rl5na3Q+khRhGo5xgk5LV6Xvpozr9H0eTREku9Y0+zMIw3nzz8gf3VHQH3OPSurttUsdT8M/bpElFq0bzETANlUOee2cgY+lcVBrssnhiGKe/QG1k2vB1kuUBBRc9hycnByBXPSajeyxzWwuJRFPKZGgQ4j3E54XsM9q61VjTVkeDLAV8VUlKo7NPfW2nY7rwXqcur+JLu8lG3cgCJnO1RnAz3+vqTXo1eXfDqOSDW7mGVHR1QbkcYI/CvUa6cO24anj5rCMMS4w2srfcgooorY84KVe9JSr3oAD1/CkpT1/CkoAKKKKAEP3a8QvPJl8R3vnCRkNxIQEXJJ3fy617e33a8L1S9d9eu7lFRHEzjai4XAJHI75HX61x4vZHv5BFupNLsWboQwyJNOFgaNsLDvBkZDnKnHAPJ/A9sVkuULsY1KoSdqk5wOwoM0jNKxc/vRiT/aGc4/MU3NcLdz6qhSlC/N/X9M2fCpWHV2upLw2iwws7uGAz0ABB6jJzjvgVLe+JtTknZJ7mC7tXiYCPYApDd2Axhxx64NYIWNkkLuysAPLwm4M2ehOeOM02rVVqPKjneDp1a8qk1fZbfk9xkkqQgGRwozjJp0CXFxZfbDbusDPsWTB2t1xg9+naoJozJPEXUPCvLRsMhz7/ANK6bVtShXTINMguRcWpjDqsS7REc5AJPORzjHTpipsmkk9fnsZYrF16NeMKdNyi+qt3Xn+ZgpEzK7KrFFxuYDhc9M+lNLMjhlJDA5BB6VYsooLm48m4vo7SEjLSyhivHbA/rXcWHgextvJkvLhLvzZQgjfMW5SuRtGQS3f6A8VdOlKexricwpYbSpe/RW/XYp/D2ea48R3Eszs8jR5ZmPJr1MdK858D6T9h128nE4aNLia1RMc4Q/eJ/GvR69CgmoWZ8bmdWFWu5QWmgUUUVscAUq96SlXvQAHr+FJSnr+FJQAUUUUAITlce1eJXOgarOl1qUVuslsZ5PlRsuAHIPy/Udua9uHWvMNP1Ky0OW4md9QaQLNh2cmFGZ2I2oTg54x9TWFamprU7cDjnhZ+69ZNWXfyOMuLaezne2uI2ilQ4ZG6g4zSTSxPIGjiESbQCisTyBycn1qaPULtZJ3ULNPdKQ7Om9mLH+H0J6VZh0G5S1uJL9bm3eFSwXyDzx/jXmO17Jn3Pt1C3tnr5de+nqT2aQyQOtsyzKV3G2mX7p74bsff2rOvBAjKscUkTjPmRs2dp7D/AD61VDEYbuOalihub6dkiw8zZcl2A+pyabkrFKCpt1HLT+txz3StYJbC3iUrIXMwHzt7E+lQR7GmjSaUQxscNKQSE46kCrsFlb/2LPc3N20V7HIyfZSF3cHHI+ueR2qgTU3uOlKFWMlTbWu/n3Vxu1WWTzWKBUJXau8Ow6D2B9e1ehy+LBoOm6NC0cN5cmFGlLnmNSowQR7HHvg152WAIGRz+tMbjnqDWsKjhscuMwCxVlJ6K/32PS/CMkA8QNJHa/vrmSaSS5bgtuOQuOw6/kK9F714v4Mu5D4x08G5aVXXBzkYOw8H1x0zXsw549K9GjNTjdHxGJwlbCyUK0uZtXv5X0HUUUVqc4Uq96SlXvQAHr+FJSnr+FJQAUUUUANJAOc14FeXk889wHnZ42mZsAbVJycHFe+t9w4ryBPBmqLmWTTLiV2bITcihee5zzXNilJ2UT2sm+rxnKpXtdWte2/lfY5hXwwYZ4OeDj9auy6pO0ZRbmZQ33iJWG4EYIIz0rc1DwlrLL5aWEr45CxbFjQ9sc5bjPNQ2fhPxJazCWPSS7BSB5hRhyOuCetcLotvVfgfSSxWGqpTlKN1tdo59JTE4kVUYgEYdQy9MdDTpbSaC5it7hVhkkCuhkYKu1ujE9h71uReB9feULJYtGrfxb0IHI688DGa72fwjp1zaLBNYKeBGZSMuoA4IcnPt/StIUJSWqOfF5tRoySg1K+9tfTqeOtGEkOFG4EgkHNPjQSRyMZY0KKCEY8vzjC+9dlrWg3YR7Ww8LMiqdouRgscH7y8559/XpWGPCevn/mE3H5D/GplTkna1zqo4+jUhzOSj81/mYHl28zSNdwO8CYHyDnd/CCewNU7T7RHI8cmHG45ctzjtXWL4V8RKskaaXOFkGGGF5H5+9C+CPEAAC6TKB2G5f8AGqafKkl+Bz0a0I151KlVW0tqtrdu4eCowfFFlL5iqI5R8pPJyCBivch0ryDRvB+u2PiK0meydYobgEy71wVB69c4r19f9qurDJqLujws8q06teM6ck1bp6hRRRXSeIFKvekpV70AB6/hSUp6/hSUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUq96SlXvQAHr+FJSnr+FJQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABSr3pKVe9AAQfQ9KMH0NFFABg+howfQ0UUAGD6GjB9DRRQAYPoaMH0NFFABg+howfQ0UUAGD6GjB9DRRQAYPoaMH0NFFABg+howfQ0UUAGD6GjB9DRRQAYPoaVQRnIoooA//9k=', correct:1.11, options:[0.5, 0.84, 1.11, 1.42] },
   { country:'Бангладеш', fabric:'Джерси (трикотаж)', decor:'Принт по всей поверхности (AOP)', img:'data:image/jpeg;base64,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', correct:1.37, options:[0.65, 1.04, 1.37, 1.73] },
@@ -352,6 +332,7 @@ const LEVEL_PRIZES = [
   190000, 250000, 320000, 400000, 500000
 ];
 const CHECKPOINTS = [4, 9, 14]; // индексы (0-based): уровни 5, 10, 15
+const LETTERS = ["A","B","C","D"];
 
 let state = { screen:"start" };
 let lastOrderKey = null;
@@ -371,6 +352,7 @@ function shuffledRoundOrder(){
   return order;
 }
 function currentRound(){ return ROUNDS[state.order[state.level]]; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 /* ---------------- таймер на ответ ---------------- */
 const TIMER_SECONDS = 20;
@@ -381,10 +363,10 @@ function clearTimer(){
   if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
 }
 function updateTimerUI(){
-  const num = document.getElementById('timerNum');
-  if(num) num.textContent = timeLeft;
-  const wrap = document.getElementById('timerWrap');
-  if(wrap) wrap.classList.toggle('low', timeLeft <= 5);
+  const el = document.getElementById('timer');
+  if(!el) return;
+  el.textContent = timeLeft;
+  el.classList.toggle('low', timeLeft <= 5);
 }
 function startTimer(){
   clearTimer();
@@ -400,33 +382,16 @@ function startTimer(){
   }, 1000);
 }
 const REACT_TIMEOUT = [
-  "Время вышло! Сколько можно копаться?!",
-  "Ну всё, я не железный ждать тебя. Раз молчишь — вот ответ.",
-  "Время истекло. Даже мой калькулятор возмущён такой медлительностью.",
-  "Хватит тянуть! В следующий раз отвечай быстрее, а то я за себя не ручаюсь."
+  "Время вышло! Правильный ответ подсвечен зелёным.",
+  "Время истекло — отвечать нужно быстрее.",
+  "Увы, 20 секунд прошли."
 ];
 function handleTimeout(){
   if(state.screen !== "game" || state.answered) return;
   state.answered = true;
   state.selected = null;
-  state.speechText = REACT_TIMEOUT[Math.floor(Math.random()*REACT_TIMEOUT.length)];
+  state.feedback = { text:pick(REACT_TIMEOUT), cls:"bad" };
   render();
-  throwCalculator();
-}
-function throwCalculator(){
-  const host = document.getElementById('hostChar');
-  const el = document.createElement('div');
-  el.className = 'calc-throw';
-  el.textContent = '🧮';
-  if(host){
-    const r = host.getBoundingClientRect();
-    el.style.left = (r.left + r.width*0.55) + 'px';
-    el.style.top = (r.top + r.height*0.35) + 'px';
-  } else {
-    el.style.left = '45%'; el.style.top = '140px';
-  }
-  document.body.appendChild(el);
-  setTimeout(()=> el.remove(), 1100);
 }
 
 function fmtAED(v){ return v.toLocaleString('ru-RU') + " AED"; }
@@ -440,112 +405,67 @@ function guaranteedAmount(level){
   return 0;
 }
 
-/* ---------------- ведущий (обобщённый персонаж, реалистичный стиль) ---------------- */
-function hostSVG(){
+/* ---------------- круглый логотип в стиле шоу ---------------- */
+function ringSVG(withTitle){
+  let spiro = "";
+  const colors = ["#e84aa6","#9a5cff","#4fa3ff","#e84aa6","#c26bff","#5fd0ff"];
+  for(let i=0;i<18;i++){
+    spiro += `<ellipse cx="200" cy="200" rx="150" ry="62" transform="rotate(${i*10} 200 200)" fill="none" stroke="${colors[i%colors.length]}" stroke-width="1.6" opacity="0.75"/>`;
+  }
+  let swirls = "";
+  for(let i=0;i<6;i++){
+    swirls += `<path d="M200 200 C 230 150, 290 150, 300 95" transform="rotate(${i*60} 200 200)" fill="none" stroke="#3f9a4a" stroke-width="9" stroke-linecap="round" opacity="0.85"/>
+               <path d="M200 200 C 230 150, 290 150, 300 95" transform="rotate(${i*60} 200 200)" fill="none" stroke="#8be08f" stroke-width="2" stroke-linecap="round" opacity="0.7"/>`;
+  }
+  const title = withTitle ? `
+    <rect x="18" y="168" width="364" height="64" rx="8" fill="url(#band)" stroke="#d7deec" stroke-width="2"/>
+    <text x="200" y="215" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="40" fill="url(#chrome)" stroke="#20283f" stroke-width="1.2" letter-spacing="1">FOB-ЦЕНУ</text>` : "";
   return `
-  <svg viewBox="0 0 150 190" xmlns="http://www.w3.org/2000/svg">
+  <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
-      <radialGradient id="skin" cx="40%" cy="30%" r="75%">
-        <stop offset="0%" stop-color="#e8c4a0"/>
-        <stop offset="60%" stop-color="#d9ac85"/>
-        <stop offset="100%" stop-color="#c2946c"/>
+      <radialGradient id="disc" cx="50%" cy="45%" r="60%">
+        <stop offset="0%" stop-color="#3a3f8f"/>
+        <stop offset="60%" stop-color="#1b1d52"/>
+        <stop offset="100%" stop-color="#0a0b2a"/>
       </radialGradient>
-      <linearGradient id="hairbase" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#e4e6ea"/>
-        <stop offset="100%" stop-color="#a8adb6"/>
+      <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="45%" stop-color="#9aa6c0"/>
+        <stop offset="55%" stop-color="#4d5772"/>
+        <stop offset="100%" stop-color="#d9e0ee"/>
       </linearGradient>
-      <linearGradient id="tee" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#f2f3f5"/>
-        <stop offset="100%" stop-color="#d7dae0"/>
+      <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="50%" stop-color="#c3cbdc"/>
+        <stop offset="52%" stop-color="#7d879e"/>
+        <stop offset="100%" stop-color="#eef2f9"/>
       </linearGradient>
-      <linearGradient id="shirtnavy" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#333f5e"/>
-        <stop offset="100%" stop-color="#1c2438"/>
+      <linearGradient id="band" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#4c4f8a"/>
+        <stop offset="50%" stop-color="#1c1f4d"/>
+        <stop offset="100%" stop-color="#3b3e78"/>
       </linearGradient>
+      <path id="arcTop" d="M 62 200 A 138 138 0 0 1 338 200"/>
+      <path id="arcBot" d="M 50 200 A 150 150 0 0 0 350 200"/>
     </defs>
-
-    <ellipse cx="75" cy="178" rx="52" ry="7" fill="#000" opacity="0.22"/>
-
-    <!-- white tee -->
-    <path d="M34 187 L39 128 Q75 116 111 128 L116 187 Z" fill="url(#tee)"/>
-
-    <!-- open navy shirt with fold shading -->
-    <path d="M26 187 L31 122 Q47 114 59 121 L51 187 Z" fill="url(#shirtnavy)"/>
-    <path d="M124 187 L119 122 Q103 114 91 121 L99 187 Z" fill="url(#shirtnavy)"/>
-    <path d="M31 122 Q47 114 59 121 L53 132 Q43 126 34 132 Z" fill="#141a2b"/>
-    <path d="M119 122 Q103 114 91 121 L97 132 Q107 126 116 132 Z" fill="#141a2b"/>
-    <path d="M40 145 L36 187" stroke="#141a2b" stroke-width="1" opacity="0.4" fill="none"/>
-    <path d="M110 145 L114 187" stroke="#141a2b" stroke-width="1" opacity="0.4" fill="none"/>
-    <circle cx="42" cy="148" r="1.4" fill="#0e1220"/>
-    <circle cx="42" cy="163" r="1.4" fill="#0e1220"/>
-
-    <!-- neck with shading -->
-    <path d="M64 100 L86 100 L86 124 Q75 132 64 124 Z" fill="url(#skin)"/>
-    <path d="M64 108 Q75 100 86 108 L86 116 Q75 122 64 116 Z" fill="#b8875f" opacity="0.35"/>
-
-    <!-- ears -->
-    <path d="M35 82 Q31 82 31 91 Q31 100 37 99 Q34 91 37 84 Z" fill="url(#skin)"/>
-    <path d="M115 82 Q119 82 119 91 Q119 100 113 99 Q116 91 113 84 Z" fill="url(#skin)"/>
-    <path d="M35 87 Q34 91 36 95" stroke="#b8875f" stroke-width="1" fill="none" opacity="0.6"/>
-    <path d="M115 87 Q116 91 114 95" stroke="#b8875f" stroke-width="1" fill="none" opacity="0.6"/>
-
-    <!-- head: narrower, more adult proportions -->
-    <path d="M75 24 Q102 25 106 56 Q108 74 100 90 Q92 104 75 106 Q58 104 50 90 Q42 74 44 56 Q48 25 75 24 Z" fill="url(#skin)"/>
-    <!-- temple / jaw shading -->
-    <path d="M100 90 Q92 104 75 106 Q68 105 63 101 Q78 99 90 84 Q96 74 98 60 Q102 70 100 90 Z" fill="#b8875f" opacity="0.28"/>
-    <path d="M46 60 Q45 74 50 87" stroke="#b8875f" stroke-width="1.4" fill="none" opacity="0.35"/>
-
-    <!-- silver hair: side part, textured strands -->
-    <path d="M43 58 Q40 22 75 17 Q110 22 107 58 Q104 42 96 33 L92 40 Q86 28 75 27 Q64 28 60 38 L55 32 Q48 40 46 50 Q44 54 43 58 Z" fill="url(#hairbase)"/>
-    <path d="M60 38 Q68 30 75 30" stroke="#8f959d" stroke-width="0.8" fill="none" opacity="0.6"/>
-    <path d="M75 27 Q84 30 90 38" stroke="#8f959d" stroke-width="0.8" fill="none" opacity="0.6"/>
-    <path d="M96 33 Q103 42 105 55" stroke="#8f959d" stroke-width="0.8" fill="none" opacity="0.6"/>
-    <path d="M50 34 Q45 44 44 55" stroke="#8f959d" stroke-width="0.8" fill="none" opacity="0.6"/>
-    <path d="M44 56 Q42 68 47 79 Q43 66 46 55 Z" fill="#c3c8ce"/>
-    <path d="M106 56 Q108 68 103 79 Q107 66 104 55 Z" fill="#c3c8ce"/>
-    <path d="M50 90 Q46 96 45 102" stroke="#c3c8ce" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.9"/>
-    <path d="M100 90 Q104 96 105 102" stroke="#c3c8ce" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.9"/>
-
-    <!-- eyebrows: natural, tapered, textured -->
-    <path d="M55 65 Q61 61 68 63.5" stroke="#6b6459" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M55 65 Q61 62 66 63" stroke="#4a453d" stroke-width="0.7" fill="none" opacity="0.7"/>
-    <path d="M82 63.5 Q89 61 95 65" stroke="#6b6459" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M84 63 Q89 62 95 65" stroke="#4a453d" stroke-width="0.7" fill="none" opacity="0.7"/>
-
-    <!-- forehead lines -->
-    <path d="M54 52 Q75 47 96 52" stroke="#b8875f" stroke-width="0.8" fill="none" opacity="0.4"/>
-    <path d="M56 46 Q75 42 94 46" stroke="#b8875f" stroke-width="0.7" fill="none" opacity="0.3"/>
-
-    <!-- eyes: smaller, realistic, with lid crease and under-eye -->
-    <path d="M54 71 Q61 67.5 69 70.5" stroke="#3a332a" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-    <ellipse cx="61.5" cy="72.5" rx="2.6" ry="2" fill="#fff"/>
-    <circle cx="61.5" cy="72.6" r="1.5" fill="#3f2c1c"/>
-    <circle cx="61" cy="72.1" r="0.5" fill="#fff" opacity="0.85"/>
-    <path d="M56 76 Q61.5 78 67 76" stroke="#b8875f" stroke-width="0.8" fill="none" opacity="0.45"/>
-
-    <path d="M81 70.5 Q89 67.5 96 71" stroke="#3a332a" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-    <ellipse cx="88.5" cy="72.5" rx="2.6" ry="2" fill="#fff"/>
-    <circle cx="88.5" cy="72.6" r="1.5" fill="#3f2c1c"/>
-    <circle cx="88" cy="72.1" r="0.5" fill="#fff" opacity="0.85"/>
-    <path d="M83 76 Q88.5 78 94 76" stroke="#b8875f" stroke-width="0.8" fill="none" opacity="0.45"/>
-
-    <!-- nose with bridge and shading -->
-    <path d="M73 68 Q69 82 67 87 Q70 91 75 90.5 Q80 91 83 87 Q81 82 77 68" fill="#d3a67f" opacity="0.4"/>
-    <path d="M67 87 Q70 91 75 90.5 Q80 91 83 87" stroke="#a97c53" stroke-width="0.9" fill="none" opacity="0.55"/>
-    <ellipse cx="70.5" cy="88.5" rx="1.1" ry="0.7" fill="#a97c53" opacity="0.5"/>
-    <ellipse cx="79.5" cy="88.5" rx="1.1" ry="0.7" fill="#a97c53" opacity="0.5"/>
-
-    <!-- nasolabial folds -->
-    <path d="M60 88 Q57 94 60 99" stroke="#b8875f" stroke-width="0.9" fill="none" opacity="0.4"/>
-    <path d="M90 88 Q93 94 90 99" stroke="#b8875f" stroke-width="0.9" fill="none" opacity="0.4"/>
-
-    <!-- calm, closed slight smile -->
-    <path d="M64 98 Q75 102 86 98" stroke="#8a5a44" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-    <path d="M64 98 Q75 100.5 86 98" stroke="#c98f6f" stroke-width="0.7" fill="none" opacity="0.4"/>
-
-    <!-- chin crease -->
-    <path d="M69 104 Q75 106 81 104" stroke="#b8875f" stroke-width="0.7" fill="none" opacity="0.3"/>
+    <circle cx="200" cy="200" r="196" fill="url(#rim)"/>
+    <circle cx="200" cy="200" r="186" fill="#1a1d45"/>
+    <circle cx="200" cy="200" r="182" fill="url(#disc)"/>
+    ${spiro}
+    ${swirls}
+    <circle cx="200" cy="200" r="160" fill="none" stroke="#c9d1e6" stroke-width="1" opacity="0.35"/>
+    <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="30" fill="url(#chrome)" stroke="#20283f" stroke-width="0.8" letter-spacing="6">
+      <textPath href="#arcTop" startOffset="50%" text-anchor="middle">УГАДАЙ</textPath>
+    </text>
+    <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="22" fill="url(#chrome)" stroke="#20283f" stroke-width="0.6" letter-spacing="5">
+      <textPath href="#arcBot" startOffset="50%" text-anchor="middle">УГАДАЙ ЦЕНУ</textPath>
+    </text>
+    ${title}
   </svg>`;
+}
+
+function loz(inner, extraCls){
+  return `<div class="loz ${extraCls||''}"><div class="loz-in">${inner}</div></div>`;
 }
 
 /* ---------------- рендер ---------------- */
@@ -555,30 +475,29 @@ function render(){
   if(state.screen==="end"){ app.innerHTML = renderEnd(); attachEnd(); return; }
   app.innerHTML = renderGame();
   attachGame();
-  requestAnimationFrame(()=>{
-    const el = document.getElementById('speechBubble');
-    if(el) requestAnimationFrame(()=> el.classList.add('show'));
-  });
 }
 
 function renderStart(){
+  const rules = [
+    ["A","50/50 — убирает два неверных варианта"],
+    ["B","Помощь зала — как ответили бы коллеги"],
+    ["C","Звонок другу — бывший сотрудник подскажет"],
+    ["D","Забрать — уйти с гарантированной суммой"]
+  ].map(([l,t])=>`<div class="loz-row">${loz(`<span class="let">${l}:</span><span>${t}</span>`)}</div>`).join("");
   return `
-  <div class="center-card">
-    <h1>Угадай FOB-цену</h1>
-    <p>Перед тобой фото футболки: ткань, страна производства и декор — всё видно.
-    Угадай реальную закупочную (FOB) цену за штуку из четырёх вариантов — 20 вопросов, от самой простой модели до самой сложной.</p>
-    <div class="rules">
-      <div class="r">📞 <div><b>Звонок другу</b> — бывший сотрудник, уже не в теме, но прикинет по опыту</div></div>
-      <div class="r">➗ <div><b>50/50</b> — уберёт два неверных варианта</div></div>
-      <div class="r">👥 <div><b>Помощь зала</b> — как ответили бы коллеги</div></div>
-      <div class="r">💰 <div><b>Забрать</b> — зафиксировать текущий гарантированный выигрыш и выйти из игры</div></div>
-    </div>
-    <button class="primary-btn" id="startBtn">Начать игру</button>
+  <div class="center">
+    <div class="ring">${ringSVG(true)}</div>
+    <div class="loz-row question">${loz(`
+      <div>По фото, ткани, стране и декору угадай закупочную (FOB) цену футболки за штуку.</div>
+      <div class="sub">20 вопросов · 20 секунд на ответ · несгораемые суммы на 5, 10 и 15 уровнях</div>`)}</div>
+    <div class="rules">${rules}</div>
+    <button class="loz-btn primary" id="startBtn">${loz("НАЧАТЬ ИГРУ")}</button>
   </div>`;
 }
 function attachStart(){
   document.getElementById('startBtn').onclick = ()=>{
-    state = { screen:"game", level:0, order:shuffledRoundOrder(), selected:null, answered:false, removed:[], usedLifelines:{fifty:false,phone:false,audience:false}, speechText:"Смотри внимательно на ткань и декор!" };
+    ROUNDS.forEach(r=>{ delete r._shuffled; });
+    state = { screen:"game", level:0, order:shuffledRoundOrder(), selected:null, answered:false, removed:[], usedLifelines:{fifty:false,phone:false,audience:false}, feedback:null };
     render();
     startTimer();
   };
@@ -586,13 +505,12 @@ function attachStart(){
 
 function renderLadder(){
   let rows = "";
-  for(let i=LEVEL_PRIZES.length-1;i>=0;i--){
-    const isCheckpoint = CHECKPOINTS.includes(i);
+  for(let i=0;i<LEVEL_PRIZES.length;i++){
     let cls = "rung";
-    if(isCheckpoint) cls += " checkpoint";
+    if(CHECKPOINTS.includes(i)) cls += " checkpoint";
     if(i===state.level) cls += " active";
     else if(i<state.level) cls += " done";
-    rows += `<div class="${cls}"><span>${i+1}</span><span>${LEVEL_PRIZES[i].toLocaleString('ru-RU')}</span></div>`;
+    rows += `<div class="${cls}"><span class="n">${i+1}</span><span class="m"></span><span class="p">${LEVEL_PRIZES[i].toLocaleString('ru-RU')}</span></div>`;
   }
   return `<div class="ladder">${rows}</div>`;
 }
@@ -605,74 +523,64 @@ function shuffledOptions(round){
   return arr;
 }
 
+const ICON_AUDIENCE = `<svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2"><circle cx="16" cy="11" r="4"/><path d="M9 25c0-4 3-7 7-7s7 3 7 7"/><circle cx="7.5" cy="13" r="3"/><path d="M2.5 24c0-3 2-5.5 5-5.5"/><circle cx="24.5" cy="13" r="3"/><path d="M29.5 24c0-3-2-5.5-5-5.5"/></svg>`;
+const ICON_PHONE = `<svg viewBox="0 0 32 32" fill="#fff"><path d="M6 12c0-3 4-6 10-6s10 3 10 6v2h-5v-3c-1.5-.7-3.2-1-5-1s-3.5.3-5 1v3H6z"/><path d="M9 17l3-4h8l3 4v8H9z"/><circle cx="16" cy="20.5" r="2.4" fill="#0b1433"/></svg>`;
+
 function renderGame(){
   const round = currentRound();
   const opts = shuffledOptions(round);
   const guaranteed = guaranteedAmount(state.level);
 
-  const optsHtml = opts.map((o,idx)=>{
-    const letter = "АБВГ"[idx];
-    let cls = "opt";
+  const ansHtml = opts.map((o,idx)=>{
+    let cls = "ans-btn";
     if(state.removed.includes(idx)) cls += " removed";
     if(state.answered){
-      if(o.isCorrect) cls += " correct";
+      if(o.isCorrect) cls += " correct blink";
       else if(idx===state.selected) cls += " wrong";
     } else if(idx===state.selected){ cls += " selected"; }
-    return `<button class="${cls}" data-idx="${idx}" ${state.answered||state.removed.includes(idx)?"disabled":""}><b>${letter}:</b>${fmtUnit(o.v)}</button>`;
+    const dis = state.answered || state.removed.includes(idx);
+    return `<button class="${cls}" data-idx="${idx}" ${dis?"disabled":""}>${loz(`<span class="dot"></span><span class="let">${LETTERS[idx]}:</span><span>${fmtUnit(o.v)}</span>`)}</button>`;
   }).join("");
 
+  const fb = state.feedback;
+  const isLast = state.level===ROUNDS.length-1;
+
   return `
-  <div class="stage">
-    <div class="content">
-      <div class="iconbar">
-        <div class="icon-group">
-          <div class="icon-btn" title="Главная">🏠</div>
+  <div class="game">
+    <div class="main">
+      <div class="stage-top">
+        <div class="ring">
+          ${ringSVG(false)}
+          <div class="photo"><img src="${round.img}" alt="${round.style||'футболка'}"></div>
+          <div class="timer" id="timer">${state.answered ? "—" : timeLeft}</div>
         </div>
-        <div class="icon-group">
-          <button class="icon-btn" id="lf-audience" title="Помощь зала" ${state.usedLifelines.audience?"disabled":""}>👥</button>
-          <button class="icon-btn" id="lf-phone" title="Звонок другу" ${state.usedLifelines.phone?"disabled":""}>📞</button>
-          <button class="icon-btn small" id="lf-fifty" title="50/50" ${state.usedLifelines.fifty?"disabled":""}>50/50</button>
+        <div class="facts">
+          <div class="fact">🌍 <b>${round.country}</b></div>
+          <div class="fact">🧵 <b>${round.fabric}</b></div>
+          <div class="fact">✨ <b>${round.decor}</b></div>
         </div>
       </div>
 
-      <div class="host-row">
-        <div class="host-wrap">
-          <div class="badge"><div class="q-n">${state.level+1}</div><div class="q-l">ВОПРОС</div></div>
-          <div class="host" id="hostChar">${hostSVG()}</div>
-        </div>
-        <div class="speech" id="speechBubble">${state.speechText || "Смотри внимательно на ткань и декор!"}</div>
-      </div>
-
-      <div class="main-grid">
-        <div class="side-left">
-          <div class="win-box">
-            <div class="lbl">Гарантировано</div>
-            <div class="amt">${guaranteed.toLocaleString('ru-RU')}<br>AED</div>
-            <button class="cashout-btn" id="cashoutBtn" ${state.answered?"disabled":""}>Забрать</button>
-          </div>
-        </div>
-
-        <div>
-          <div class="shirt-box"><img src="${round.img}" alt="${round.style||'футболка'}"></div>
-          <div class="facts">
-            <div class="fact">🌍 <b>${round.country}</b></div>
-            <div class="fact">🧵 <b>${round.fabric}</b></div>
-            <div class="fact">✨ <b>${round.decor}</b></div>
-          </div>
-          <div class="q-hex-row">
-            <div class="q-hex">Сколько стоит эта футболка для нас по FOB (за 1 шт.)?</div>
-            <div class="timer-wrap" id="timerWrap"><div class="timer-num" id="timerNum">${TIMER_SECONDS}</div></div>
-          </div>
-          <div class="options">${optsHtml}</div>
-          <div class="footer-row">
-            <button class="next-btn" id="nextBtn" ${state.answered?"":"disabled"}>${state.level===ROUNDS.length-1?"Забрать выигрыш":"Следующий вопрос"}</button>
-          </div>
-        </div>
-
-        <div class="side-right">${renderLadder()}</div>
+      <div class="loz-row question">${loz(`Вопрос ${state.level+1}. Сколько стоит эта футболка для нас по FOB (за 1 шт.)?`)}</div>
+      <div class="answers">${ansHtml}</div>
+      <div class="feedback ${fb?fb.cls:''}">${fb?fb.text:""}</div>
+      <div class="bottom-row">
+        <button class="loz-btn" id="nextBtn" ${state.answered?"":"disabled"}>${loz(isLast?"ЗАБРАТЬ ВЫИГРЫШ":"СЛЕДУЮЩИЙ ВОПРОС")}</button>
       </div>
     </div>
-    <div class="audience-strip"></div>
+
+    <aside class="panel">
+      <div class="lifelines">
+        <button class="life" id="lf-fifty" title="50/50" ${state.usedLifelines.fifty?"disabled":""}>50/50</button>
+        <button class="life" id="lf-audience" title="Помощь зала" ${state.usedLifelines.audience?"disabled":""}>${ICON_AUDIENCE}</button>
+        <button class="life" id="lf-phone" title="Звонок другу" ${state.usedLifelines.phone?"disabled":""}>${ICON_PHONE}</button>
+      </div>
+      ${renderLadder()}
+      <div class="panel-foot">
+        <div class="guar">Гарантировано<b>${fmtAED(guaranteed)}</b></div>
+        <button class="loz-btn" id="cashoutBtn" ${state.answered?"disabled":""}>${loz("ЗАБРАТЬ ДЕНЬГИ")}</button>
+      </div>
+    </aside>
   </div>`;
 }
 
@@ -681,48 +589,25 @@ const REACT_CORRECT = [
   "В точку!",
   "Отличный глаз на ткань!",
   "Именно так!",
-  "Ну наконец-то, а то я уже начал сомневаться в тебе.",
-  "Надо же, угадал. Не расслабляйся.",
-  "Верно. Хоть кто-то тут читает спецификации.",
-  "Так и быть, засчитаю. Но это не повод гордиться собой."
+  "Верно. Хоть кто-то тут читает спецификации."
 ];
 const REACT_WRONG = [
-  "Увы, не в этот раз...",
-  "Мимо, но неплохая попытка!",
-  "Здесь чуть-чуть промахнулись.",
-  "Мимо. Даже не близко, если честно.",
-  "Нет. И как ты вообще с ценами работаешь — ума не приложу.",
-  "Мимо! Ещё пара таких ответов, и я тебя уволю.",
-  "Не угадал. За такое раньше премии лишали, между прочим.",
-  "Ошибка. Иди ещё раз спецификацию почитай, горе-байер."
-];
-
-/* Истории/байки — показываются МЕЖДУ вопросами, а не как реакция на ответ */
-const STORY_LINES = [
-  "Смотри внимательно на ткань и декор!",
-  "Знаешь, в 90-х я месяц жил во Вьетнаме на текстильной фабрике — там я впервые понял, что такое настоящий трикотаж.",
-  "Читал недавно книгу про историю хлопка — оказывается, вся мировая торговля когда-то строилась вокруг одной этой ткани.",
-  "Однажды в Бангладеш меня застал муссон прямо на складе тканей — до сих пор помню запах мокрого хлопка.",
-  "В Узбекистане я как-то пробовал сам собрать хлопок в поле — уважение к этой работе после этого совсем другое.",
-  "Люблю после работы почитать что-нибудь про природу — вчера дочитал про миграцию птиц, удивительные существа.",
-  "Ездил как-то в Китай на фабрику вышивки — там мастера работают с иголкой быстрее, чем я печатаю на клавиатуре.",
-  "История знает много великих байеров. Я, конечно, скромнее, но тоже стараюсь.",
-  "В юности работал на швейном производстве — с тех пор ни одной пуговицы не пришиваю криво.",
-  "Наблюдал закат в пустыне под Дубаем в прошлые выходные — красота, всем рекомендую хотя бы раз увидеть."
+  "Увы, это неверный ответ.",
+  "Мимо! Правильный ответ подсвечен зелёным.",
+  "Не угадал. Иди ещё раз спецификацию почитай."
 ];
 
 function attachGame(){
-  document.querySelectorAll('.opt').forEach(btn=>{
+  document.querySelectorAll('.ans-btn').forEach(btn=>{
     btn.onclick = ()=>{
       if(state.answered) return;
       clearTimer();
       state.selected = parseInt(btn.dataset.idx);
       state.answered = true;
-      const opts = shuffledOptions(currentRound());
-      const correct = opts[state.selected].isCorrect;
-      state.speechText = correct
-        ? REACT_CORRECT[Math.floor(Math.random()*REACT_CORRECT.length)]
-        : REACT_WRONG[Math.floor(Math.random()*REACT_WRONG.length)];
+      const correct = shuffledOptions(currentRound())[state.selected].isCorrect;
+      state.feedback = correct
+        ? { text:pick(REACT_CORRECT), cls:"ok" }
+        : { text:pick(REACT_WRONG), cls:"bad" };
       render();
     };
   });
@@ -741,8 +626,8 @@ function attachGame(){
       state.screen = "end"; state.finalAmount = LEVEL_PRIZES[LEVEL_PRIZES.length-1]; state.won=true;
       render(); return;
     }
-    state.level += 1; state.selected=null; state.answered=false; state.removed=[];
-    state.speechText = STORY_LINES[Math.floor(Math.random()*STORY_LINES.length)];
+    state.level += 1; state.selected=null; state.answered=false; state.removed=[]; state.feedback=null;
+    timeLeft = TIMER_SECONDS;
     render();
     startTimer();
   };
@@ -770,6 +655,7 @@ function attachGame(){
   if(phone) phone.onclick = ()=>{
     if(state.usedLifelines.phone || state.answered) return;
     state.usedLifelines.phone = true;
+    render();
     showPhoneModal();
   };
 
@@ -777,6 +663,7 @@ function attachGame(){
   if(audience) audience.onclick = ()=>{
     if(state.usedLifelines.audience || state.answered) return;
     state.usedLifelines.audience = true;
+    render();
     showAudienceModal();
   };
 }
@@ -813,23 +700,20 @@ function showPhoneModal(){
   if(knowsIt){ suggestIdx = correctIdx; }
   else{
     const wrongPool = availableIdx.filter(i=>i!==correctIdx);
-    suggestIdx = wrongPool.length ? wrongPool[Math.floor(Math.random()*wrongPool.length)] : correctIdx;
+    suggestIdx = wrongPool.length ? pick(wrongPool) : correctIdx;
   }
-  const letter = "АБВГ"[suggestIdx];
-  const line = knowsIt
-    ? PHONE_LINES_RIGHT[Math.floor(Math.random()*PHONE_LINES_RIGHT.length)]
-    : PHONE_LINES_WRONG[Math.floor(Math.random()*PHONE_LINES_WRONG.length)];
-  const character = PHONE_CHARACTERS[Math.floor(Math.random()*PHONE_CHARACTERS.length)];
+  const line = knowsIt ? pick(PHONE_LINES_RIGHT) : pick(PHONE_LINES_WRONG);
+  const character = pick(PHONE_CHARACTERS);
 
   const modal = document.createElement('div');
   modal.className = 'modal-bg';
   modal.innerHTML = `
     <div class="modal">
-      <div class="ghost">${character.emoji}</div>
-      <h3>Звонок бывшему сотруднику</h3>
-      <div style="color:var(--text-dim); font-size:12.5px; margin-top:-6px; margin-bottom:2px;">${character.name}</div>
-      <div class="modal-speech">${line} <b>вариант ${letter} (${fmtUnit(opts[suggestIdx].v)})</b>. И вообще, не звони мне больше по этому поводу 😤</div>
-      <button class="modal-close" id="closePhone">Закрыть</button>
+      <div class="who">${character.emoji}</div>
+      <h3>Звонок другу</h3>
+      <div class="name">${character.name}</div>
+      <div class="modal-speech">${line} <b>вариант ${LETTERS[suggestIdx]} (${fmtUnit(opts[suggestIdx].v)})</b>. И вообще, не звони мне больше по этому поводу 😤</div>
+      <button class="loz-btn" id="closePhone">${loz("ЗАКРЫТЬ")}</button>
     </div>`;
   document.body.appendChild(modal);
   document.getElementById('closePhone').onclick = ()=> modal.remove();
@@ -841,41 +725,40 @@ function showAudienceModal(){
   const availableIdx = opts.map((o,i)=>i).filter(i=>!state.removed.includes(i));
   const correctIdx = opts.findIndex(o=>o.isCorrect);
 
-  let weights = availableIdx.map(i=> i===correctIdx ? (40+Math.random()*30) : (5+Math.random()*25));
+  const weights = availableIdx.map(i=> i===correctIdx ? (40+Math.random()*30) : (5+Math.random()*25));
   const sum = weights.reduce((a,b)=>a+b,0);
-  let pcts = weights.map(w=>Math.round(w/sum*100));
-  let diff = 100 - pcts.reduce((a,b)=>a+b,0);
-  pcts[0]+=diff;
+  const pcts = weights.map(w=>Math.round(w/sum*100));
+  pcts[0] += 100 - pcts.reduce((a,b)=>a+b,0);
 
-  const rowsHtml = availableIdx.map((idx,k)=>{
-    const letter = "АБВГ"[idx];
-    return `<div class="abar-row">
-      <div class="abar-label">${letter}</div>
-      <div class="abar-track"><div class="abar-fill" id="bar-${k}" data-pct="${pcts[k]}"></div></div>
-      <div class="abar-pct">${pcts[k]}%</div>
-    </div>`;
-  }).join("");
+  const barsHtml = availableIdx.map((idx,k)=>`
+    <div class="bar">
+      <div class="pct">${pcts[k]}%</div>
+      <div class="col" id="bar-${k}" data-pct="${pcts[k]}"></div>
+      <div class="l">${LETTERS[idx]}</div>
+    </div>`).join("");
 
   const modal = document.createElement('div');
   modal.className = 'modal-bg';
-  modal.innerHTML = `<div class="modal"><h3>👥 Помощь зала</h3><div>${rowsHtml}</div><button class="modal-close" id="closeAud">Закрыть</button></div>`;
+  modal.innerHTML = `<div class="modal"><h3>Помощь зала</h3><div class="bars">${barsHtml}</div><button class="loz-btn" id="closeAud">${loz("ЗАКРЫТЬ")}</button></div>`;
   document.body.appendChild(modal);
-  requestAnimationFrame(()=>{
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
     availableIdx.forEach((idx,k)=>{
       const el = document.getElementById('bar-'+k);
-      if(el) el.style.width = el.dataset.pct+"%";
+      if(el) el.style.height = (el.dataset.pct*1.2)+"px";
     });
-  });
+  }));
   document.getElementById('closeAud').onclick = ()=> modal.remove();
 }
 
 function renderEnd(){
+  const title = state.won ? "Идеально! 🏆" : (state.cashed ? "Вы забрали деньги" : "Игра окончена");
+  const text = state.won ? "Вы точно разбираетесь в себестоимости — все 20 вопросов позади." : (state.cashed ? "Разумное решение — выигрыш зафиксирован." : "Не страшно — с опытом глаз наостряется на ткань и декор.");
   return `
-  <div class="center-card">
-    <h1>${state.won ? "Идеально! 🏆" : (state.cashed ? "Забрано!" : "Игра окончена")}</h1>
-    <p>${state.won ? "Вы точно разбираетесь в себестоимости — все 20 вопросов позади." : (state.cashed ? "Разумное решение — зафиксировали выигрыш." : "Не страшно — с опытом глаз наостряется на ткань и декор.")}</p>
-    <div class="final-amount">${state.finalAmount.toLocaleString('ru-RU')} AED</div>
-    <button class="primary-btn" id="againBtn">Играть заново</button>
+  <div class="center">
+    <div class="ring">${ringSVG(true)}</div>
+    <div class="loz-row question">${loz(`<div><b>${title}</b></div><div class="sub">${text}</div>`)}</div>
+    <div class="final-amount">${fmtAED(state.finalAmount)}</div>
+    <button class="loz-btn primary" id="againBtn">${loz("ИГРАТЬ ЗАНОВО")}</button>
   </div>`;
 }
 function attachEnd(){
