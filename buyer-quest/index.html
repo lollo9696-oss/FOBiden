@@ -85,13 +85,13 @@
 
   <div class="overlay show" id="title">
     <h1>КВЕСТ БАЙЕРА<br><span>В ПОИСКАХ ПОСТАВЩИКА</span></h1>
-    <p>Нам срочно нужен лучший поставщик, а его запер в эксклюзивном контракте злой МОНОПОЛИСТ. Возьми посох у Вероники, пройди офис, выставку, фабрику и порт, отбейся от торгующихся поставщиков и подпиши честный контракт!</p>
+    <p>Где-то за выставками, фабриками и портами есть поставщик, которого не найти ни в одной базе. Говорят, его держит в эксклюзивном контракте МОНОПОЛИСТ. Найди его — пока не закончился квартал.</p>
     <div class="row">
       <button class="btn" id="btnNew">ИГРАТЬ ЗА ПАРНЯ</button>
       <button class="btn" id="btnNewGirl">ИГРАТЬ ЗА ДЕВУШКУ</button>
       <button class="btn alt" id="btnCont" style="display:none">ПРОДОЛЖИТЬ</button>
     </div>
-    <div class="keys">СТРЕЛКИ / WASD — ИДТИ · ПРОБЕЛ — ПОСОХ / ГОВОРИТЬ<br>НА ТЕЛЕФОНЕ — КНОПКИ ПОД ЭКРАНОМ</div>
+    <div class="keys">СТРЕЛКИ / WASD — ИДТИ · ПРОБЕЛ — ДЕЙСТВИЕ / ГОВОРИТЬ<br>НА ТЕЛЕФОНЕ — КНОПКИ ПОД ЭКРАНОМ</div>
   </div>
 
   <div class="overlay" id="dead">
@@ -190,8 +190,8 @@ const DESIGNER_LINES = [
 ];
 const HAGGLE_LINES = ['$3 ЗА ФУТБОЛКУ!', 'ДОРОГОЙ, Я НЕ МОГУ ТАКОЕ СДЕЛАТЬ!', 'ЭТО ТЯЖЕЛО ДЛЯ НАС!', 'ЛУЧШАЯ ЦЕНА, ДРУГ!', '$5 — ПОСЛЕДНЯЯ ЦЕНА!', 'MOQ 10 000 ШТ!', 'ТКАНЬ ПОДОРОЖАЛА!', '+15% ЗА СРОЧНОСТЬ!'];
 const CAVES = {
-  archive: { text:'ВЕРОНИКА: ДЕРЖИ ПОСОХ! ДАВАЙ, ИДИ К ПОСТАВЩИКАМ И НАЙДИ САМОГО ЛУЧШЕГО.', npc:'veronika', name:'ВЕРОНИКА', item:'staff', leaves:true,
-             got:'ПОСОХ GJ! ПРОБЕЛ — УДАР. ВЕРОНИКА: А Я ПОЙДУ ПОКУРЮ.', gone:'ВЕРОНИКА УШЛА НА ПЕРЕКУР.' },
+  archive: { text:'ТЕБЕ НУЖНО ВЗЯТЬ ЭТУ ВЕЩЬ.', npc:'veronika', item:'staff', leaves:true,
+             got:'ВЫ ПОДОБРАЛИ ПОСОХ! ПРОБЕЛ — УДАР.', gone:'' },
   secret:  { text:'ЭТО СЕКРЕТ ДЛЯ ВСЕХ: ПРАЙС КОНКУРЕНТА!', npc:'merch', item:'args10', got:'+10 АРГУМЕНТОВ ДЛЯ ТОРГА!' },
   thermos: { text:'НА ТАМОЖНЕ ДОЛГИЕ ОЧЕРЕДИ. ВОЗЬМИ ТЕРМОС.', npc:'elder', item:'thermos', got:'ТЕРМОС: +1 ЧАШКА КОФЕ К ЗАПАСУ!' }
 };
@@ -213,18 +213,18 @@ const CAVE_MAP = [
 const LOCS = [
   { name:'ОФИС ЗАКУПОК', theme:'office', start:'0,1', startTile:[8,9], rooms:{
     '0,1': { doors:{ e:'shut' }, cond:'item', cave:'archive', npcs:[
-        { at:[7,1], kind:'lead', name:'МЕНЕДЖЕР', seated:true, quest:true,
-          lines:['О, ты пришёл! Слушай внимательно.','Нам срочно нужен лучший поставщик. Иди и найди его, а не то нам хана!','Только без посоха к поставщикам не суйся — загляни в архив, тёмный проход наверху слева. Там Вероника.'] },
-        { at:[8,1], kind:'colleague', name:'КОЛЛЕГА', seated:true,
+        { at:[7,1], kind:'lead', name:'МАРГО', seated:true, quest:true,
+          lines:['А, это ты... Я ждала.','Где-то там, за выставками и портами, есть поставщик, которого нет ни в одной базе.','Честная цена. Сроки, которые не сдвигаются. Говорят, его держит у себя Монополист.','Найди его. Иначе к концу квартала нас здесь не будет.','И прежде чем уйти... загляни туда, где хранят забытое.'] },
+        { at:[8,1], kind:'colleague', name:'ГАЛИНА ПЕТРОВНА', seated:true,
           lines:['Я занята, у меня сверка остатков.','Но если пойдёшь на перекур — зови меня.'] },
-        { at:[4,3], kind:'designer', name:'ДИЗАЙНЕР', busy:true },
-        { at:[4,8], kind:'designer2', name:'ДИЗАЙНЕР', busy:true },
-        { at:[3,5], kind:'emp1', seated:true, busy:true }, { at:[4,5], kind:'emp2', seated:true, busy:true },
-        { at:[5,5], kind:'emp3', seated:true, busy:true }, { at:[6,5], kind:'emp4', seated:true, busy:true },
-        { at:[7,5], kind:'emp5', seated:true, busy:true }, { at:[8,5], kind:'emp6', seated:true, busy:true },
-        { at:[3,7], kind:'emp4', seated:true, busy:true, facing:'up' }, { at:[4,7], kind:'emp5', seated:true, busy:true, facing:'up' },
-        { at:[5,7], kind:'emp1', seated:true, busy:true, facing:'up' }, { at:[6,7], kind:'emp6', seated:true, busy:true, facing:'up' },
-        { at:[7,7], kind:'emp2', seated:true, busy:true, facing:'up' }, { at:[8,7], kind:'emp3', seated:true, busy:true, facing:'up' }
+        { at:[4,3], kind:'designer', name:'ИЗАБЕЛЛА', busy:true },
+        { at:[4,8], kind:'designer2', name:'ЛУКА', busy:true },
+        { at:[3,5], kind:'emp1', name:'КИРИЛЛ', seated:true, busy:true }, { at:[4,5], kind:'emp2', name:'ДЖЕННИФЕР', seated:true, busy:true },
+        { at:[5,5], kind:'emp3', name:'МАЙКЛ', seated:true, busy:true }, { at:[6,5], kind:'emp4', name:'СОНЯ', seated:true, busy:true },
+        { at:[7,5], kind:'emp5', name:'АХМЕД', seated:true, busy:true }, { at:[8,5], kind:'emp6', name:'ХЛОЯ', seated:true, busy:true },
+        { at:[3,7], kind:'emp4', name:'ЛЕЙЛА', seated:true, busy:true, facing:'up' }, { at:[4,7], kind:'emp5', name:'ОЛИВЕР', seated:true, busy:true, facing:'up' },
+        { at:[5,7], kind:'emp1', name:'ДМИТРИЙ', seated:true, busy:true, facing:'up' }, { at:[6,7], kind:'emp6', name:'ЭМИЛИ', seated:true, busy:true, facing:'up' },
+        { at:[7,7], kind:'emp2', name:'АНЯ', seated:true, busy:true, facing:'up' }, { at:[8,7], kind:'emp3', name:'ТИМУР', seated:true, busy:true, facing:'up' }
       ],
       map:[
       '###O############',
@@ -289,7 +289,7 @@ const LOCS = [
   }},
   { name:'ВЫСТАВКА ПОСТАВЩИКОВ', theme:'fair', start:'0,1', startTile:[7,7], rooms:{
     '0,1': { doors:{ n:'open', e:'open' },
-      npc:{ kind:'host', name:'ОРГАНИЗАТОР', lines:['Добро пожаловать на выставку!','Поставщиков тут сотни, а лучший — один.','Бейдж в VIP-зону лежит в павильоне со светом, на севере.'] },
+      npc:{ kind:'host', name:'РОБЕРТО, ОРГАНИЗАТОР', lines:['Добро пожаловать на выставку!','Поставщиков тут сотни, а лучший — один.','Бейдж в VIP-зону лежит в павильоне со светом, на севере.'] },
       map:[
       '################',
       '#s.s.s....s.s.s#',
@@ -355,7 +355,7 @@ const LOCS = [
   }},
   { name:'ФАБРИКА', theme:'factory', start:'0,0', startTile:[7,7], rooms:{
     '0,0': { doors:{ e:'open' },
-      npc:{ kind:'tech', name:'ТЕХНОЛОГ', lines:['Это фабрика. Смотри под ноги — конвейеры!','Пропуск в цех лежит на складе рулонов, к югу от конвейера.','А на тесте по качеству не ошибайся.'] },
+      npc:{ kind:'tech', name:'ЛИ ВЭЙ, ТЕХНОЛОГ', lines:['Это фабрика. Смотри под ноги — конвейеры!','Пропуск в цех лежит на складе рулонов, к югу от конвейера.','А на тесте по качеству не ошибайся.'] },
       map:[
       '################',
       '#mm..........mm#',
@@ -421,7 +421,7 @@ const LOCS = [
   }},
   { name:'ПОРТ И ТАМОЖНЯ', theme:'port', start:'1,2', startTile:[7,7], rooms:{
     '1,2': { doors:{ n:'open' }, cave:'thermos',
-      npc:{ kind:'logist', name:'ЛОГИСТ', lines:['Порт и таможня. Контейнеры, контейнеры...','Ключ от терминала — в диспетчерской на западе.','Брокер на севере просит «за ускорение». Не плати ему!'] },
+      npc:{ kind:'logist', name:'ХАНС, ЛОГИСТ', lines:['Порт и таможня. Контейнеры, контейнеры...','Ключ от терминала — в диспетчерской на западе.','Брокер на севере просит «за ускорение». Не плати ему!'] },
       map:[
       '###O############',
       '#xx..........xx#',
@@ -485,7 +485,7 @@ const LOCS = [
   }},
   { name:'ШТАБ МОНОПОЛИСТА', theme:'hq', start:'0,2', startTile:[7,7], rooms:{
     '0,2': { doors:{ n:'open' },
-      npc:{ kind:'secretary', name:'СЕКРЕТАРЬ', lines:['Господин Монополист вас примет.','Только учтите: из его контрактов ещё никто не уходил...'] },
+      npc:{ kind:'secretary', name:'ВИКТОРИЯ, СЕКРЕТАРЬ', lines:['Господин Монополист вас примет.','Только учтите: из его контрактов ещё никто не уходил...'] },
       map:[
       '################',
       '#pp..........pp#',
@@ -858,7 +858,7 @@ function drawPerson(x, y, o){
 const NPC_LOOK = {
   boss:      { shirt:'#ffffff', jacket:'#34495e', pants:'#34495e', tie:'#3b82c4', hair:'#8a8f98' },
   elder:     { shirt:'#b03a2e', jacket:'#b03a2e', pants:'#7b241c', hair:'#e9edf1', beard:'#ffffff' },
-  veronika:  { shirt:'#1d1d1d', pants:'#2b2b33', hair:'#0d0d12', longHair:true, glassesBold:true, chain:true, shoes:'#ffffff', skin:'#f6d7c3', streak:'#ff5fa2' },
+  veronika:  { shirt:'#e9eef5', pants:'#5a6b7c', hair:'#f3e2a6', longHair:true, shoes:'#ffffff', skin:'#f6d7c3' },
   lead:      { shirt:'#ffffff', jacket:'#d9c6f2', pants:'#2f4a7a', hair:'#f3d98b', longHair:true, glassesBold:true },
   colleague: { shirt:'#a05ea8', pants:'#4a2c55', hair:'#7a4a25', wide:true, skin:'#efc29d' },
   emp1:      { shirt:'#cfe3ff', pants:'#2f4a7a', hair:'#2b1a10', messy:true },
@@ -1014,7 +1014,7 @@ function loadRoom(loc, key){
         const c = cfg.npcs ? cfg.npcs.find(n=>n.at[0] === tx && n.at[1] === ty) : cfg.npc;
         if(c) room.npcs.push({ tx, ty, kind:c.kind, name:c.name || 'СОТРУДНИК', lines:c.lines, busy:c.busy, seated:c.seated, facing:c.facing || 'down', baseFacing:c.facing || 'down' });
       }
-      else if(t === 'X'){ room.npcs.push({ tx, ty, kind:'supplier', name:'ПОСТАВЩИК', lines:cfg.supplier.lines, supplier:true, facing:'down' }); }
+      else if(t === 'X'){ room.npcs.push({ tx, ty, kind:'supplier', name:'АНТОНИО, ПОСТАВЩИК', lines:cfg.supplier.lines, supplier:true, facing:'down' }); }
       else if(t === 'Q'){ room.quizTile = { tx, ty }; }
       else if(t === 'O'){ room.cave = { tx, ty, id:cfg.cave }; }
       line.push(t);
@@ -1144,7 +1144,7 @@ function tryInteract(){
     if(n.tx === tx && n.ty === ty){
       if(!n.seated) n.facing = { up:'down', down:'up', left:'right', right:'left' }[hero.facing];
       if(n.busy){ const pool = n.kind.startsWith('designer') ? DESIGNER_LINES : BUSY_LINES; say(n.name, [pool[Math.random()*pool.length|0]]); return true; }
-      if(n.supplier){ say('ПОСТАВЩИК', n.lines, ()=>{ finishGame(); }); }
+      if(n.supplier){ say('АНТОНИО, ПОСТАВЩИК', n.lines, ()=>{ finishGame(); }); }
       else if(R.isCave){ say('', n.lines); }
       else say(n.name, n.lines);
       return true;
@@ -1176,7 +1176,7 @@ function updateHero(){
 
   if(hit('act')){
     if(!tryInteract() && G.hasFolder && h.cd === 0){ h.atk = 14; h.cd = 20; SFX.swing(); }
-    else if(!G.hasFolder && !R.isCave && !R.npcs.length) showToast('НУЖЕН ПОСОХ — ОН В АРХИВЕ');
+    else if(!G.hasFolder && !R.isCave && !R.npcs.length) showToast('ЧЕГО-ТО НЕ ХВАТАЕТ...');
   }
   if(h.atk > 0) h.atk--;
 
@@ -1253,7 +1253,7 @@ function onBump(t, v){
     return;
   }
   if(d && R.cfg.doors && R.cfg.doors[d] && doorState(R, d) === 'shut'){
-    if(!h.lockMsg || frame - h.lockMsg > 120){ h.lockMsg = frame; showToast(R.cfg.cond === 'item' ? 'СНАЧАЛА ВОЗЬМИ ПОСОХ В АРХИВЕ' : 'ДВЕРЬ ЗАКРЫТА'); }
+    if(!h.lockMsg || frame - h.lockMsg > 120){ h.lockMsg = frame; showToast(R.cfg.cond === 'item' ? 'ТЫ ЕЩЁ НЕ ГОТОВ...' : 'ДВЕРЬ ЗАКРЫТА'); }
     return;
   }
   // толкаем коробку
@@ -1293,7 +1293,7 @@ function pickItem(it, i){
   else if(it.cave){
     G.caves[it.cave] = true; const c = CAVES[it.cave];
     if(it.kind === 'staff' || it.kind === 'folder') G.hasFolder = true;
-    if(c.leaves){ const n = R.npcs.findIndex(n=>n.kind === c.npc); if(n >= 0){ const nn = R.npcs[n]; poof(nn.tx*TS + 8, nn.ty*TS + 8, '#9aa7b4'); R.grid[nn.ty][nn.tx] = '.'; R.npcs.splice(n, 1); } caveText = { s:c.gone, shown:0 }; }
+    if(c.leaves){ const n = R.npcs.findIndex(n=>n.kind === c.npc); if(n >= 0){ const nn = R.npcs[n]; poof(nn.tx*TS + 8, nn.ty*TS + 8, '#9aa7b4'); R.grid[nn.ty][nn.tx] = '.'; R.npcs.splice(n, 1); } caveText = c.gone ? { s:c.gone, shown:0 } : null; }
     if(it.kind === 'args10') G.args += 10;
     if(it.kind === 'thermos'){ G.maxHp = Math.min(16, G.maxHp + 2); G.hp = G.maxHp; }
     SFX.key(); say('', [c.got]);
@@ -1424,7 +1424,7 @@ function enterCave(){
   fade = { t:0, dur:24, mid:()=>{
     R = loadCave(R.cave.id, parent);
     hero.x = 7.5*TS; hero.y = (ROWS - 2)*TS - 4; hero.facing = 'up'; hero.cell = null;
-    const cv_ = CAVES[R.caveId]; caveText = { s:(cv_.leaves && G.caves[R.caveId]) ? cv_.gone : cv_.text, shown:0 };
+    const cv_ = CAVES[R.caveId], ct = (cv_.leaves && G.caves[R.caveId]) ? cv_.gone : cv_.text; caveText = ct ? { s:ct, shown:0 } : null;
   }};
   state = 'fade';
 }
@@ -1516,7 +1516,7 @@ function update(){
   } else if(state === 'fadein'){
     fade.t++; if(fade.t >= fade.dur*2){ fade = null; state = 'play'; }
   } else if(state === 'card'){
-    if(--card.t <= 0 || (card.t < 80 && hit('act'))){ card = null; state = 'play'; if(R.cfg.npc && G.loc > 0) showToast('ПОГОВОРИ С ' + (R.cfg.npc.name === 'ОРГАНИЗАТОР' ? 'ОРГАНИЗАТОРОМ' : R.cfg.npc.name === 'ТЕХНОЛОГ' ? 'ТЕХНОЛОГОМ' : R.cfg.npc.name === 'ЛОГИСТ' ? 'ЛОГИСТОМ' : 'СЕКРЕТАРЁМ')); }
+    if(--card.t <= 0 || (card.t < 80 && hit('act'))){ card = null; state = 'play'; }
   }
   for(let i = particles.length - 1; i >= 0; i--){ const p = particles[i]; p.x += p.vx; p.y += p.vy; if(--p.t <= 0) particles.splice(i, 1); }
   if(toast && --toast.t <= 0) toast = null;
